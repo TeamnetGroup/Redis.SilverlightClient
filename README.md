@@ -8,8 +8,8 @@ Redis.SilverlightClient
 ##SilverlightPolicyServer 
   is a component for delivering ClientAccessPolicy file to Silverlight clients on port 943.
 
-    Redis
-      .SilverlightClient.RedisSubscriber.SubscribeToChannel("127.0.0.1", 4525, "test-alert", Scheduler.Default)
+    Redis.SilverlightClient.RedisSubscriber
+      .SubscribeToChannel("127.0.0.1", 4525, "test-alert", Scheduler.Default)
       .Subscribe(message =>
       {
         //do something with a message
@@ -19,8 +19,8 @@ Redis.SilverlightClient
         //handle exception
       });
 
-    Redis
-      .SilverlightClient.RedisSubscriber.SubscribeToChannelPattern("127.0.0.1", 4525, "test-*", Scheduler.Default)
+    Redis.SilverlightClient.RedisSubscriber
+      .SubscribeToChannelPattern("127.0.0.1", 4525, "test-*", Scheduler.Default)
       .Subscribe(message =>
       {
         //do something with a message
