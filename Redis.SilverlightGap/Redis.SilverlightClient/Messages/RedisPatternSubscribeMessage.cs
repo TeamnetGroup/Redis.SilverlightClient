@@ -1,4 +1,5 @@
 ﻿using PortableSprache;
+using Redis.SilverlightClient.Parsers;
 using System;
 using System.Linq;
 using System.Net;
@@ -16,26 +17,12 @@ namespace Redis.SilverlightClient.Messages
     public class RedisPatternSubscribeMessage
     {
         internal static readonly Parser<RedisPatternSubscribeMessage> SubscribeMessageParser =
-            from star in Parse.Char('*')
-            from numberOfArgs in Parse.Digit.Many()
-            from newLine1 in Parse.String("\r\n")
-            from subscribeMessageToken in Parse.String("$8\r\npmessage\r\n")
-            from dollar in Parse.Char('$')
-            from patternNameLength in Parse.Digit.Many()
-            from newLine2 in Parse.String("\r\n")
-            from patternName in Parse.AnyChar.Until(Parse.String("\r\n"))
-            from dollar2 in Parse.Char('$')
-            from channelNameLength in Parse.Digit.Many()
-            from newLine3 in Parse.String("\r\n")
-            from channelName in Parse.AnyChar.Until(Parse.String("\r\n"))
-            from dollar3 in Parse.Char('$')
-            from contentLength in Parse.Digit.Many()
-            from newLine4 in Parse.String("\r\n")
-            from content in Parse.AnyChar.Until(Parse.String("\r\n"))
-            select new RedisPatternSubscribeMessage(
-                new string(patternName.ToArray()),
-                new string(channelName.ToArray()), 
-                new string(content.ToArray()));
+            from arrayOfStrings in RedisParsersModule.ArrayOfBulkStringsParser
+                .Where(x => x.Length == 4 && x[0] == "pmessage")
+            let patternName = arrayOfStrings[0]
+            let channelName = arrayOfStrings[1]
+            let content = arrayOfStrings[2]
+            select new RedisPatternSubscribeMessage(patternName, channelName, content);
 
         public RedisPatternSubscribeMessage(string pattern, string channelName, string content)
         {
