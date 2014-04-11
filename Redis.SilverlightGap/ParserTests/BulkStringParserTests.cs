@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using PortableSprache;
+﻿using PortableSprache;
 
 using Xunit;
 
@@ -32,6 +26,16 @@ namespace ParserTests
 
             Assert.Throws<ParseException>(() =>
                 parser.Parse(malformedMessage));
+        }
+
+        [Fact]
+        public void MessageLengthMustMatch()
+        {
+            var malformedMessage = "$4\r\nlong test message\r\n";
+
+            var parser = Redis.SilverlightClient.Parsers.RedisParsersModule.BulkStringParser;
+
+            Assert.Throws<ParseException>(() => parser.Parse(malformedMessage));
         }
     }
 }
