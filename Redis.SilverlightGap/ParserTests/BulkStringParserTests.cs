@@ -22,5 +22,16 @@ namespace ParserTests
 
             Assert.Equal("test", result);
         }
+
+        [Fact]
+        public void ParsingMalformedBulkStringMessageFails()
+        {
+            var malformedMessage = "not a real bulk string";
+
+            var parser = Redis.SilverlightClient.Parsers.RedisParsersModule.BulkStringParser;
+
+            Assert.Throws<ParseException>(() =>
+                parser.Parse(malformedMessage));
+        }
     }
 }
