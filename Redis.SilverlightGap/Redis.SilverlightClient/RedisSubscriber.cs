@@ -8,7 +8,7 @@ using System.Reactive.Linq;
 
 namespace Redis.SilverlightClient
 {
-    public class RedisSubscriber
+    public static class RedisSubscriber
     {
         public static IObservable<RedisSubscribeMessage> SubscribeToChannel(string host, int port, string channel)
         {
@@ -24,28 +24,30 @@ namespace Redis.SilverlightClient
             {
                 var remainder = string.Empty;
 
-                return receivedMessagesParts.ObserveOn(scheduler).Subscribe(part =>
-                {
-                    var parseTry = RedisSubscribeMessage.SubscribeMessageParser.TryParse(remainder + part);
-
-                    if (!parseTry.WasSuccessful)
+                return receivedMessagesParts.ObserveOn(scheduler).Subscribe(
+                    part =>
                     {
-                        remainder += part;
-                    }
+                        var parseTry = RedisSubscribeMessage.SubscribeMessageParser.TryParse(remainder + part);
 
-                    while (parseTry.WasSuccessful)
-                    {
-                        remainder = string.Empty;
-                        observer.OnNext(parseTry.Value);
-
-                        if (!parseTry.Remainder.AtEnd)
+                        if (!parseTry.WasSuccessful)
                         {
-                            remainder += parseTry.Remainder.Source.Substring(parseTry.Remainder.Position);
+                            remainder += part;
                         }
 
-                        parseTry = RedisSubscribeMessage.SubscribeMessageParser.TryParse(remainder);
-                    }
-                }, ex => observer.OnError(ex));
+                        while (parseTry.WasSuccessful)
+                        {
+                            remainder = string.Empty;
+                            observer.OnNext(parseTry.Value);
+
+                            if (!parseTry.Remainder.AtEnd)
+                            {
+                                remainder += parseTry.Remainder.Source.Substring(parseTry.Remainder.Position);
+                            }
+
+                            parseTry = RedisSubscribeMessage.SubscribeMessageParser.TryParse(remainder);
+                        }
+                    },
+                    observer.OnError);
             });
         }
 
