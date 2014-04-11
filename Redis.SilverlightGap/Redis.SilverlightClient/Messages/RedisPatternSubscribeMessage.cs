@@ -19,9 +19,9 @@ namespace Redis.SilverlightClient.Messages
         internal static readonly Parser<RedisPatternSubscribeMessage> SubscribeMessageParser =
             from arrayOfStrings in RedisParsersModule.ArrayOfBulkStringsParser
                 .Where(x => x.Length == 4 && x[0] == "pmessage")
-            let patternName = arrayOfStrings[0]
-            let channelName = arrayOfStrings[1]
-            let content = arrayOfStrings[2]
+            let patternName = arrayOfStrings[1]
+            let channelName = arrayOfStrings[2]
+            let content = arrayOfStrings[3]
             select new RedisPatternSubscribeMessage(patternName, channelName, content);
 
         public RedisPatternSubscribeMessage(string pattern, string channelName, string content)
