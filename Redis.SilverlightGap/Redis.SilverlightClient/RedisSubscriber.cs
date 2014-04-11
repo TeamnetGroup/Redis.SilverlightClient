@@ -10,6 +10,11 @@ namespace Redis.SilverlightClient
 {
     public class RedisSubscriber
     {
+        public static IObservable<RedisSubscribeMessage> SubscribeToChannel(string host, int port, string channel)
+        {
+            return SubscribeToChannel(host, port, channel, Scheduler.Default);
+        }
+
         public static IObservable<RedisSubscribeMessage> SubscribeToChannel(string host, int port, string channel, IScheduler scheduler)
         {
             var wireMessage = string.Format("*2\r\n$9\r\nSUBSCRIBE\r\n${0}\r\n{1}\r\n", channel.Length, channel);
@@ -42,6 +47,14 @@ namespace Redis.SilverlightClient
                     }
                 }, ex => observer.OnError(ex));
             });
+        }
+
+        public static IObservable<RedisPatternSubscribeMessage> SubscribeToChannelPattern(
+            string host,
+            int port,
+            string channelPattern)
+        {
+            return SubscribeToChannelPattern(host, port, channelPattern, Scheduler.Default);
         }
 
         public static IObservable<RedisPatternSubscribeMessage> SubscribeToChannelPattern(string host, int port, string channelPattern, IScheduler scheduler)

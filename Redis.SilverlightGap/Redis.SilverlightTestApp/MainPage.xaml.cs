@@ -19,7 +19,7 @@ namespace Redis.SilverlightTestApp
 
         void MainPageLoaded(object sender, RoutedEventArgs e)
         {
-            RedisSubscriber.SubscribeToChannel("127.0.0.1", 4525, "test-alert", Scheduler.Default)
+            RedisSubscriber.SubscribeToChannel("127.0.0.1", 4525, "test-alert")
                 .ObserveOn(SynchronizationContext.Current)
                 .Subscribe(message =>
                     {
