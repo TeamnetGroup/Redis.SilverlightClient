@@ -2,7 +2,7 @@
 ###################
 *.com
 *.class
-*.dll
+#*.dll
 *.exe
 *.pdb
 *.dll.config
@@ -10,7 +10,7 @@
 *.suo
 *.nupkg
 # Include dlls if they’re in the NuGet packages directory
-!/packages/*/lib/*.dll
+#!/packages/*/*/*.dll
 # VS Upgrade stuff #
 ####################
 UpgradeLog.XML
@@ -30,7 +30,7 @@ Old
 release
 Release
 TestResults
-packages
+#packages
 *.vs10x
 # Web publish log #
 ###################
