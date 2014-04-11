@@ -1,11 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30110.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Redis.SilverlightClient", "Redis.SilverlightClient\Redis.SilverlightClient.csproj", "{07A4B917-41D6-4E3E-AF09-5C53850CBF07}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SilverlightPolicyServer", "SilverlightPolicyServer\SilverlightPolicyServer.csproj", "{7C20BD4B-9C22-47FC-B688-963C87E05085}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Redis.SilverlightTestApp", "Redis.SilverlightTestApp\Redis.SilverlightTestApp.csproj", "{7D8795F6-2976-453E-975E-2A2C30C213C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Redis.MessageParsers", "Redis.MessageParsers\Redis.MessageParsers.csproj", "{77E307C7-CA43-4960-A59C-0F23C1960193}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParserTests", "ParserTests\ParserTests.csproj", "{1BA46A37-AEA7-4983-9D8F-90A8B037E9EA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,6 +31,14 @@ Global
 		{7D8795F6-2976-453E-975E-2A2C30C213C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D8795F6-2976-453E-975E-2A2C30C213C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D8795F6-2976-453E-975E-2A2C30C213C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77E307C7-CA43-4960-A59C-0F23C1960193}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77E307C7-CA43-4960-A59C-0F23C1960193}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77E307C7-CA43-4960-A59C-0F23C1960193}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77E307C7-CA43-4960-A59C-0F23C1960193}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BA46A37-AEA7-4983-9D8F-90A8B037E9EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BA46A37-AEA7-4983-9D8F-90A8B037E9EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BA46A37-AEA7-4983-9D8F-90A8B037E9EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BA46A37-AEA7-4983-9D8F-90A8B037E9EA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
