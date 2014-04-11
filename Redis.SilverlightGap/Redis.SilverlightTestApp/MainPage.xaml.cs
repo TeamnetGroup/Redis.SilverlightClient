@@ -5,25 +5,25 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 
+using Redis.SilverlightClient;
 
 namespace Redis.SilverlightTestApp
 {
-    public partial class MainPage : UserControl
+    public partial class MainPage
     {
         public MainPage()
         {
             InitializeComponent();
-            this.Loaded += MainPage_Loaded;
+            this.Loaded += this.MainPageLoaded;
         }
 
-        void MainPage_Loaded(object sender, RoutedEventArgs e)
+        void MainPageLoaded(object sender, RoutedEventArgs e)
         {
-            Redis
-                .SilverlightClient.RedisSubscriber.SubscribeToChannel("127.0.0.1", 4525, "test-alert", Scheduler.Default)
+            RedisSubscriber.SubscribeToChannel("127.0.0.1", 4525, "test-alert")
                 .ObserveOn(SynchronizationContext.Current)
                 .Subscribe(message =>
                     {
-                        listBoxAlerts.Items.Add(new ListBoxItem() { Content = message.Content });
+                        listBoxAlerts.Items.Add(new ListBoxItem { Content = message.Content });
                     },
                     ex =>
                     {

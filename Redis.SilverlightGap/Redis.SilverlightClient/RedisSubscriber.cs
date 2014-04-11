@@ -8,8 +8,13 @@ using System.Reactive.Linq;
 
 namespace Redis.SilverlightClient
 {
-    public class RedisSubscriber
+    public static class RedisSubscriber
     {
+        public static IObservable<RedisSubscribeMessage> SubscribeToChannel(string host, int port, string channel)
+        {
+            return SubscribeToChannel(host, port, channel, Scheduler.Default);
+        }
+
         public static IObservable<RedisSubscribeMessage> SubscribeToChannel(string host, int port, string channel, IScheduler scheduler)
         {
             var wireMessage = string.Format("*2\r\n$9\r\nSUBSCRIBE\r\n${0}\r\n{1}\r\n", channel.Length, channel);
@@ -19,29 +24,39 @@ namespace Redis.SilverlightClient
             {
                 var remainder = string.Empty;
 
-                return receivedMessagesParts.ObserveOn(scheduler).Subscribe(part =>
-                {
-                    var parseTry = RedisSubscribeMessage.SubscribeMessageParser.TryParse(remainder + part);
-
-                    if (!parseTry.WasSuccessful)
+                return receivedMessagesParts.ObserveOn(scheduler).Subscribe(
+                    part =>
                     {
-                        remainder += part;
-                    }
+                        var parseTry = RedisSubscribeMessage.SubscribeMessageParser.TryParse(remainder + part);
 
-                    while (parseTry.WasSuccessful)
-                    {
-                        remainder = string.Empty;
-                        observer.OnNext(parseTry.Value);
-
-                        if (!parseTry.Remainder.AtEnd)
+                        if (!parseTry.WasSuccessful)
                         {
-                            remainder += parseTry.Remainder.Source.Substring(parseTry.Remainder.Position);
+                            remainder += part;
                         }
 
-                        parseTry = RedisSubscribeMessage.SubscribeMessageParser.TryParse(remainder);
-                    }
-                }, ex => observer.OnError(ex));
+                        while (parseTry.WasSuccessful)
+                        {
+                            remainder = string.Empty;
+                            observer.OnNext(parseTry.Value);
+
+                            if (!parseTry.Remainder.AtEnd)
+                            {
+                                remainder += parseTry.Remainder.Source.Substring(parseTry.Remainder.Position);
+                            }
+
+                            parseTry = RedisSubscribeMessage.SubscribeMessageParser.TryParse(remainder);
+                        }
+                    },
+                    observer.OnError);
             });
+        }
+
+        public static IObservable<RedisPatternSubscribeMessage> SubscribeToChannelPattern(
+            string host,
+            int port,
+            string channelPattern)
+        {
+            return SubscribeToChannelPattern(host, port, channelPattern, Scheduler.Default);
         }
 
         public static IObservable<RedisPatternSubscribeMessage> SubscribeToChannelPattern(string host, int port, string channelPattern, IScheduler scheduler)
