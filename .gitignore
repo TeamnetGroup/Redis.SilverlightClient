@@ -68,6 +68,10 @@ desktop.ini
 *.bak
 *.docstates
 *.user
+
+# no idea what this is
+*.sln.ide
+
 # we need nuget config #
 ########################
 !repositories.config
