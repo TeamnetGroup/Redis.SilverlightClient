@@ -29,3 +29,6 @@ Redis.SilverlightClient
       {
         //handle exception
       });
+
+
+[![Build status](https://ci.appveyor.com/api/projects/status/b6w8dqd56iqh0uc5)](https://ci.appveyor.com/project/vgrigoriu/redis-silverlightclient)
