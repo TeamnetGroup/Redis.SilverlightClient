@@ -74,13 +74,16 @@
   <ItemGroup>
     <Compile Include="ConnectionToken.cs" />
     <Compile Include="Messages\RedisPatternSubscribeMessage.cs" />
+    <Compile Include="Messages\RedisPublishMessage.cs" />
     <Compile Include="Messages\RedisSubscribeMessage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RedisConnector.cs" />
     <Compile Include="RedisException.cs" />
+    <Compile Include="RedisPublisher.cs" />
     <Compile Include="RedisReceiver.cs" />
     <Compile Include="RedisSubscriber.cs" />
     <Compile Include="RedisTransmitter.cs" />
+    <Compile Include="RedisTransmitterReceiver.cs" />
     <Compile Include="Sockets\ISocket.cs" />
     <Compile Include="Sockets\ISocketAsyncEventArgs.cs" />
     <Compile Include="Sockets\ISocketAsyncEventArgsDecorator.cs" />

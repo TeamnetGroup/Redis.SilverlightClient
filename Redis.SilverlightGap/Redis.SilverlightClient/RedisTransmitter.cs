@@ -30,7 +30,7 @@ namespace Redis.SilverlightClient
                 var buffer = Encoding.UTF8.GetBytes(message);
                 connectionToken.SocketEvent.SetBuffer(buffer, 0, buffer.Length);
 
-                var disposableCompletedSubscription = connectionToken.SocketEvent.Completed.Subscribe(_ =>
+                var disposableCompletedSubscription = connectionToken.SocketEvent.Completed.ObserveOn(scheduler).Subscribe(_ =>
                 {
                     SendNotificationToObserver(observer, connectionToken.SocketEvent);
                 });

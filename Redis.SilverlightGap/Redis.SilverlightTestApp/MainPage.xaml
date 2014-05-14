@@ -7,6 +7,18 @@
     d:DesignHeight="300" d:DesignWidth="400">
 
     <Grid x:Name="LayoutRoot" Background="White">
-        <ListBox x:Name="listBoxAlerts"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox HorizontalAlignment="Stretch" FontSize="22" x:Name="textBoxMessage" Grid.Column="0"/>
+            <Button x:Name="buttonSendMessage" FontSize="22" Grid.Column="1" Content="Send" />
+        </Grid>
+        <ListBox x:Name="listBoxAlerts" FontSize="22" Grid.Row="1" HorizontalAlignment="Stretch"/>
     </Grid>
 </UserControl>

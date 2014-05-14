@@ -17,6 +17,18 @@ namespace Redis.SilverlightClient
 
         public static IObservable<RedisSubscribeMessage> SubscribeToChannel(string host, int port, string channel, IScheduler scheduler)
         {
+            if(string.IsNullOrEmpty(host))
+                throw new ArgumentException("host");
+
+            if (port < 4502 || port > 4534)
+                throw new ArgumentException("Port must be in range 4502-4534 due to Silverlight network access restrictions");
+
+            if (string.IsNullOrEmpty(channel))
+                throw new ArgumentException("channel");
+
+            if (scheduler == null)
+                throw new ArgumentNullException("scheduler");
+
             var wireMessage = string.Format("*2\r\n$9\r\nSUBSCRIBE\r\n${0}\r\n{1}\r\n", channel.Length, channel);
             var receivedMessagesParts = SubscribeToRedisWithMessage(host, port, wireMessage, scheduler).Skip(1);
 
