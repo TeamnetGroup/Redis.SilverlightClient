@@ -1,5 +1,6 @@
 ﻿using Redis.SilverlightClient.Sockets;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reactive;
@@ -28,15 +29,16 @@ namespace Redis.SilverlightClient
             {
                 var disposable = new CompositeDisposable();
                 var buffer = Encoding.UTF8.GetBytes(message);
-                connectionToken.SocketEvent.SetBuffer(buffer, 0, buffer.Length);
 
-                var disposableCompletedSubscription = connectionToken.SocketEvent.Completed.Subscribe(_ =>
+                var disposableCompletedSubscription = connectionToken.SocketEvent.Completed.ObserveOn(scheduler).Subscribe(_ =>
                 {
                     SendNotificationToObserver(observer, connectionToken.SocketEvent);
                 });
 
                 var disposableActions = scheduler.Schedule(() =>
                 {
+                    connectionToken.SocketEvent.SetBuffer(buffer, 0, buffer.Length);
+
                     if (!connectionToken.Socket.SendAsync(connectionToken.SocketEvent))
                     {
                         SendNotificationToObserver(observer, connectionToken.SocketEvent);

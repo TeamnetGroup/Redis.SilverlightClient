@@ -39,7 +39,7 @@ namespace Redis.SilverlightClient
 
                 var connectionToken = new ConnectionToken(socket, socketEvent);
 
-                var disposableEventSubscription = socketEvent.Completed.Subscribe(_ =>
+                var disposableEventSubscription = socketEvent.Completed.ObserveOn(scheduler).Subscribe(_ =>
                 {
                     SendNotificationToObserver(observer, socketEvent, connectionToken);
                 });

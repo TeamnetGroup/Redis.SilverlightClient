@@ -14,5 +14,10 @@ namespace Redis.SilverlightClient
         {
             this.SocketError = socketError;
         }
+
+        public override string ToString()
+        {
+            return SocketError.ToString();
+        }
     }
 }

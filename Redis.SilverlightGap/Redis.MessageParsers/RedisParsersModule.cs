@@ -21,5 +21,10 @@ namespace Redis.SilverlightClient.Parsers
                                             from arrayElement in BulkStringParser.Repeat(arrayLength)
                                             select arrayElement
                                         ).Select(x => x.ToArray());
+
+        public static Parser<int> IntegerParser =
+                                    from colon in Parse.Char(':')
+                                    from integer in Parse.Number.Select(int.Parse)
+                                    select integer;
     }
 }
