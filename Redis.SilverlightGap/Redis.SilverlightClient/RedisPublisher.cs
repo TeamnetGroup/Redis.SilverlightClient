@@ -18,6 +18,8 @@ namespace Redis.SilverlightClient
         private readonly Subject<RedisPublishMessage> inboxChannel;
         private readonly IDisposable disposable;
 
+        public RedisPublisher(string host, int port) : this(host, port, Scheduler.Default) { }
+
         public RedisPublisher(string host, int port, IScheduler scheduler)
         {
             if (string.IsNullOrWhiteSpace(host))
