@@ -118,7 +118,7 @@ namespace Redis.SilverlightClient
                          let transmitter = new RedisTransmitter(connection)
                          from _ in transmitter.SendMessage(message, scheduler)
                          let receiver = new RedisReceiver(connection)
-                         from messageReceived in receiver.Receive(new byte[4096], scheduler)
+                         from messageReceived in receiver.Receive(new byte[4096], scheduler, repeat: true)
                          select messageReceived;
 
             return Observable.Using(() => socket, _ => result);

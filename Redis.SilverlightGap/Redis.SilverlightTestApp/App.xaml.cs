@@ -36,6 +36,7 @@ namespace Redis.SilverlightTestApp
 
         private void Application_UnhandledException(object sender, ApplicationUnhandledExceptionEventArgs e)
         {
+            MessageBox.Show(e.ToString());
             // If the app is running outside of the debugger then report the exception using
             // the browser's exception mechanism. On IE this will display it a yellow alert 
             // icon in the status bar and Firefox will display a script error.

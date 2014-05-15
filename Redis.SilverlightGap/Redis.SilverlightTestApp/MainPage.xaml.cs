@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 
 using Redis.SilverlightClient;
+using System.Threading.Tasks;
 
 namespace Redis.SilverlightTestApp
 {

@@ -61,7 +61,7 @@ namespace Redis.SilverlightClient
 
                     var transmitterReceiver = connectTask.Result;
                     transmitterReceiver.Transmitter.SendMessage(message.ToString(), scheduler).Wait();
-                    var response = transmitterReceiver.Receiver.Receive(buffer, scheduler).Take(1).Wait<string>();
+                    var response = transmitterReceiver.Receiver.Receive(buffer, scheduler, false).Wait<string>();
                     var pongs = RedisParsersModule.IntegerParser.TryParse(response);
 
                     if (!pongs.WasSuccessful)

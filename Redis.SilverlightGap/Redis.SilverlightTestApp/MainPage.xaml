@@ -16,9 +16,9 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBox HorizontalAlignment="Stretch" FontSize="22" x:Name="textBoxMessage" Grid.Column="0"/>
+            <TextBox HorizontalAlignment="Stretch" MaxHeight="50" AcceptsReturn="True" FontSize="22" x:Name="textBoxMessage" Grid.Column="0"/>
             <Button x:Name="buttonSendMessage" FontSize="22" Grid.Column="1" Content="Send" />
         </Grid>
-        <ListBox x:Name="listBoxAlerts" FontSize="22" Grid.Row="1" HorizontalAlignment="Stretch"/>
+        <ListBox x:Name="listBoxAlerts" FontSize="22" Grid.Row="1" HorizontalAlignment="Stretch" />
     </Grid>
 </UserControl>

@@ -1,5 +1,6 @@
 ﻿using Redis.SilverlightClient.Sockets;
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Reactive;
@@ -31,29 +32,36 @@ namespace Redis.SilverlightClient
             this.connectionToken = connectionToken;
         }
 
-        public IObservable<string> Receive(byte[] buffer, IScheduler scheduler)
+        public IObservable<string> Receive(byte[] buffer, IScheduler scheduler, bool repeat)
         {
             return Observable.Create<string>(observer =>
                 {
                     var disposable = new CompositeDisposable();
-                    this.connectionToken.SocketEvent.SetBuffer(buffer, 0, buffer.Length);
                     var subject = new Subject<Unit>();
 
                     var disposableEventSubscription = connectionToken.SocketEvent.Completed.ObserveOn(scheduler).Subscribe(_ =>
                     {
-                        if (SendNotificationToObserver(observer, connectionToken.SocketEvent))
+                        if (SendNotificationToObserver(observer, connectionToken.SocketEvent, repeat))
                         {
-                            subject.OnNext(Unit.Default);
+                            if (repeat)
+                            {
+                                subject.OnNext(Unit.Default);
+                            }
                         }
                     });
 
                     var disposableActions = subject.ObserveOn(scheduler).Subscribe(_ =>
                     {
+                        connectionToken.SocketEvent.SetBuffer(buffer, 0, buffer.Length);
+
                         if (!connectionToken.Socket.ReceiveAsync(connectionToken.SocketEvent))
                         {
-                            if (SendNotificationToObserver(observer, connectionToken.SocketEvent))
+                            if (SendNotificationToObserver(observer, connectionToken.SocketEvent, repeat))
                             {
-                                subject.OnNext(Unit.Default);
+                                if (repeat)
+                                {
+                                    subject.OnNext(Unit.Default);
+                                }
                             }
                         }
                     });
@@ -62,16 +70,19 @@ namespace Redis.SilverlightClient
 
                     disposable.Add(disposableEventSubscription);
                     disposable.Add(disposableActions);
+                    disposable.Add(subject);
 
                     return disposable;
                 });
         }
 
-        private bool SendNotificationToObserver(IObserver<string> observer, ISocketAsyncEventArgs socketEvent)
+        private bool SendNotificationToObserver(IObserver<string> observer, ISocketAsyncEventArgs socketEvent, bool repeat)
         {
             if (socketEvent.SocketError == SocketError.Success)
             {
                 observer.OnNext(Encoding.UTF8.GetString(socketEvent.Buffer, 0, socketEvent.BytesTransferred));
+                if (!repeat)
+                    observer.OnCompleted();
                 return true;
             }
             else
