@@ -67,7 +67,7 @@ namespace Redis.SilverlightClient
                     var pongs = RedisParsersModule.IntegerParser.TryParse(response);
 
                     if (!pongs.WasSuccessful)
-                        throw new ParseException(string.Format("Invalid integer response for published message: {0}", pongs.Message));
+                        message.Callback.SetException(new ParseException(string.Format("Invalid integer response for published message: {0}", response)));
 
                     message.Callback.SetResult(pongs.Value);
                 }

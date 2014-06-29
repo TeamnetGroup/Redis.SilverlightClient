@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using PortableSprache;
+using Redis.MessageParsers;
 
 namespace Redis.SilverlightClient.Parsers
 {
@@ -26,5 +27,17 @@ namespace Redis.SilverlightClient.Parsers
                                     from colon in Parse.Char(':')
                                     from integer in Parse.Number.Select(int.Parse)
                                     select integer;
+
+        public static Parser<RedisSimpleResponseMessages> OKParser =
+                                        from plus in Parse.String("+OK")
+                                        from _ in Parse.String("\r\n")
+                                        select RedisSimpleResponseMessages.OK;
+
+        public static Parser<RedisSimpleResponseMessages> NullParser =
+                                        from dollar in Parse.Char('$')
+                                        from minus in Parse.Char('-')
+                                        from one in Parse.Char('1')
+                                        from _ in Parse.String("\r\n")
+                                        select RedisSimpleResponseMessages.Null;
     }
 }
