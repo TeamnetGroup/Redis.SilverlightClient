@@ -9,10 +9,10 @@ namespace Redis.SilverlightClient.Messages
     {
         public RedisPublishMessage(string channelName, string message, TaskCompletionSource<int> callback)
         {
-            if (string.IsNullOrWhiteSpace(channelName))
+            if (string.IsNullOrEmpty(channelName))
                 throw new ArgumentException("channelName");
 
-            if (string.IsNullOrWhiteSpace(message))
+            if (string.IsNullOrEmpty(message))
                 throw new ArgumentException("message");
 
             if (callback == null)

@@ -35,6 +35,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RedisParsersModule.cs" />
+    <Compile Include="RedisSimpleResponseMessages.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="PortableSprache">
