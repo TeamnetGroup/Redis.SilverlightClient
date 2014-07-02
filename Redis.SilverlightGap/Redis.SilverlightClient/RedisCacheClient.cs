@@ -94,8 +94,11 @@ namespace Redis.SilverlightClient
                                         "Unknown GET response: " + response));
                             }
                         }
+                        else
+                        {
+                            getValueMessage.Callback.SetResult(result.Value);
+                        }
 
-                        getValueMessage.Callback.SetResult(result.Value);
                         return;
                     }
 
@@ -113,28 +116,17 @@ namespace Redis.SilverlightClient
                         }
 
                         setValueMessage.Callback.SetResult("OK");
+
                         return;
                     }
                 }
+                catch (AggregateException exception)
+                {
+                    HandleException(exception, message);
+                }
                 catch (RedisException exception)
                 {
-                    var getValueMessage = message as RedisGetValueMessage;
-
-                    if (getValueMessage != null)
-                    {
-                        getValueMessage.Callback.SetException(exception);
-                        return;
-                    }
-
-                    var setValueMessage = message as RedisSetValueMessage;
-
-                    if (setValueMessage != null)
-                    {
-                        setValueMessage.Callback.SetException(exception);
-                        return;
-                    }
-
-                    throw;
+                    HandleException(exception, message);
                 }
             });
 
@@ -142,6 +134,25 @@ namespace Redis.SilverlightClient
             compositeDisposable.Add(pipelineDisposable);
 
             disposable = compositeDisposable;
+        }
+
+        private void HandleException(Exception exception, object message)
+        {
+            var getValueMessage = message as RedisGetValueMessage;
+
+            if (getValueMessage != null)
+            {
+                getValueMessage.Callback.SetException(exception);
+                return;
+            }
+
+            var setValueMessage = message as RedisSetValueMessage;
+
+            if (setValueMessage != null)
+            {
+                setValueMessage.Callback.SetException(exception);
+                return;
+            }
         }
 
         public Task SetValue(string key, string value)

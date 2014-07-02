@@ -71,7 +71,11 @@ namespace Redis.SilverlightClient
 
                     message.Callback.SetResult(pongs.Value);
                 }
-                catch(ParseException exception)
+                catch (AggregateException exception)
+                {
+                    message.Callback.SetException(exception);
+                }
+                catch (ParseException exception)
                 {
                     message.Callback.SetException(exception);
                 }
