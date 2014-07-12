@@ -1,5 +1,4 @@
-﻿using Redis.SilverlightClient.Sockets;
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Reactive.Concurrency;
@@ -10,10 +9,10 @@ namespace Redis.SilverlightClient
 {
     class RedisConnector
     {
-        private readonly Func<ISocketDecorator> socketFactory;
-        private readonly Func<ISocketAsyncEventArgsDecorator> socketEventsFactory;
+        private readonly Func<Socket> socketFactory;
+        private readonly Func<SocketAsyncEventArgs> socketEventsFactory;
 
-        public RedisConnector(Func<ISocketDecorator> socketFactory, Func<ISocketAsyncEventArgsDecorator> socketEventsFactory)
+        public RedisConnector(Func<Socket> socketFactory, Func<SocketAsyncEventArgs> socketEventsFactory)
         {
             if (socketFactory == null)
                 throw new ArgumentNullException("socketFactory");
@@ -25,9 +24,9 @@ namespace Redis.SilverlightClient
             this.socketEventsFactory = socketEventsFactory;
         }
 
-        public IObservable<ConnectionToken> BuildConnectionToken(string host, int port, IScheduler scheduler)
+        public IObservable<SocketAsyncEventArgs> BuildConnectionToken(string host, int port, IScheduler scheduler)
         {
-            return Observable.Create<ConnectionToken>(observer =>
+            return Observable.Create<SocketAsyncEventArgs>(observer =>
             {
                 var disposable = new CompositeDisposable();
 
@@ -36,19 +35,18 @@ namespace Redis.SilverlightClient
 
                 socketEvent.RemoteEndPoint = new DnsEndPoint(host, port);
                 socketEvent.SocketClientAccessPolicyProtocol = System.Net.Sockets.SocketClientAccessPolicyProtocol.Tcp;
+                socketEvent.UserToken = socket;
 
-                var connectionToken = new ConnectionToken(socket, socketEvent);
-
-                var disposableEventSubscription = socketEvent.Completed.ObserveOn(scheduler).Subscribe(_ =>
+                var disposableEventSubscription = socketEvent.CompletedObservable().ObserveOn(scheduler).Subscribe(_ =>
                 {
-                    SendNotificationToObserver(observer, socketEvent, connectionToken);
+                    SendNotificationToObserver(observer, socketEvent);
                 });
 
                 var disposableActions = scheduler.Schedule(() =>
                 {    
                     if (!socket.ConnectAsync(socketEvent))
                     {
-                        SendNotificationToObserver(observer, socketEvent, connectionToken);
+                        SendNotificationToObserver(observer, socketEvent);
                     }
                 });
 
@@ -59,11 +57,11 @@ namespace Redis.SilverlightClient
             });
         }
 
-        private void SendNotificationToObserver(IObserver<ConnectionToken> observer, ISocketAsyncEventArgs socketEvent, ConnectionToken connectionToken)
+        private void SendNotificationToObserver(IObserver<SocketAsyncEventArgs> observer, SocketAsyncEventArgs socketEvent)
         {
             if (socketEvent.SocketError == SocketError.Success)
             {
-                observer.OnNext(connectionToken);
+                observer.OnNext(socketEvent);
                 observer.OnCompleted();
             }
             else

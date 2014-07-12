@@ -1,108 +1,63 @@
-﻿using Redis.SilverlightClient.Parsers;
-using Redis.SilverlightClient.Sockets;
-using System;
-using System.Net.Sockets;
-using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using PortableSprache;
+﻿using PortableSprache;
 using Redis.SilverlightClient.Messages;
-using System.Reactive;
+using Redis.SilverlightClient.Parsers;
+using System;
+using System.Reactive.Concurrency;
+using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
 
 namespace Redis.SilverlightClient
 {
-    public class RedisPublisher : IDisposable
+    internal class RedisPublisher : IRedisPublisher
     {
-        private readonly Subject<RedisPublishMessage> inboxChannel;
-        private readonly IDisposable disposable;
+        private readonly RedisConnection redisConnection;
+        private readonly IScheduler scheduler;
+        private readonly byte[] buffer;
 
-        public RedisPublisher(string host, int port) : this(host, port, Scheduler.Default) { }
-
-        public RedisPublisher(string host, int port, IScheduler scheduler)
+        public RedisPublisher(RedisConnection redisConnection, IScheduler scheduler)
         {
-            if (string.IsNullOrWhiteSpace(host))
-                throw new ArgumentException("host");
-
-            if (port < 4502 || port > 4534)
-                throw new ArgumentException("Port must be in range 4502-4534 due to Silverlight network access restrictions");
+            if (redisConnection == null)
+                throw new ArgumentNullException("redisConnection");
 
             if (scheduler == null)
                 throw new ArgumentNullException("scheduler");
 
-            inboxChannel = new Subject<RedisPublishMessage>();
-
-            var compositeDisposable = new CompositeDisposable();
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            var socketAsyncEventArgs = new SocketAsyncEventArgs();
-            var redisConnector = new RedisConnector(
-                                    () => new SocketDecorator(socket),
-                                    () => new SocketAsyncEventArgsDecorator(socketAsyncEventArgs));
-
-            var cancellationDisposable = new CancellationDisposable();
-
-             var connectTask = new Task<RedisTransmitterReceiver>(() =>
-             {
-                 var connectionToken = redisConnector.BuildConnectionToken(host, port, scheduler).Wait<ConnectionToken>();
-                 var transmitter = new RedisTransmitter(connectionToken);
-                 var receiver = new RedisReceiver(connectionToken);
-
-                 return new RedisTransmitterReceiver(transmitter, receiver);
-             }, cancellationDisposable.Token);
-            
-            var buffer = new byte[256];
-            var pipelineDisposable = inboxChannel.ObserveOn(scheduler).Subscribe(message =>
-            {
-                try
-                {
-                    if (connectTask.Status == TaskStatus.Created)
-                    {
-                        connectTask.Start();
-                    }
-
-                    var transmitterReceiver = connectTask.Result;
-                    transmitterReceiver.Transmitter.SendMessage(message.ToString(), scheduler).Wait();
-                    var response = transmitterReceiver.Receiver.Receive(buffer, scheduler, false).Wait<string>();
-                    var pongs = RedisParsersModule.IntegerParser.TryParse(response);
-
-                    if (!pongs.WasSuccessful)
-                        message.Callback.SetException(new ParseException(string.Format("Invalid integer response for published message: {0}", response)));
-
-                    message.Callback.SetResult(pongs.Value);
-                }
-                catch (AggregateException exception)
-                {
-                    message.Callback.SetException(exception);
-                }
-                catch (ParseException exception)
-                {
-                    message.Callback.SetException(exception);
-                }
-                catch (RedisException exception)
-                {
-                    message.Callback.SetException(exception);
-                }
-            });
-
-            compositeDisposable.Add(Disposable.Create(() => socket.Dispose()));
-            compositeDisposable.Add(pipelineDisposable);
-
-            disposable = compositeDisposable;
+            this.redisConnection = redisConnection;
+            this.scheduler = scheduler;
+            this.buffer = new byte[4096];
         }
-
+         
         public Task<int> PublishMessage(string channel, string message)
         {
             var callback = new TaskCompletionSource<int>();
-            var publishMessage = new RedisPublishMessage(channel, message, callback);
-            inboxChannel.OnNext(publishMessage);
+            var publishMessage = new RedisPublishMessage(channel, message);
+
+            redisConnection.Inbox.OnNext(async (transmitter, receiver, ex) =>
+            {
+                if (ex != null)
+                {
+                    callback.SetException(ex);
+                    var tcs = new TaskCompletionSource<bool>();
+                    tcs.SetResult(true);
+                    await tcs.Task;
+                    return;
+                }
+
+                await transmitter.SendMessage(publishMessage.ToString(), scheduler).ToTask();
+                var response = await receiver.Receive(buffer, scheduler, false).ToTask();
+
+                var pongs = RedisParsersModule.IntegerParser.TryParse(response);
+                if (!pongs.WasSuccessful)
+                        callback.SetException(new ParseException(string.Format("Invalid integer response for published message: {0}", response)));
+
+                callback.SetResult(pongs.Value);
+            });
             return callback.Task;
         }
 
         public void Dispose()
         {
-            inboxChannel.Dispose();
-            disposable.Dispose();
+            redisConnection.Dispose();
         }
     }
 }

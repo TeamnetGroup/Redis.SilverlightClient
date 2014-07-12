@@ -19,7 +19,7 @@ namespace Redis.SilverlightClient.Parsers
                                             from star in Parse.Char('*')
                                             from arrayLength in Parse.Number.Select(int.Parse)
                                             from _ in Parse.String("\r\n")
-                                            from arrayElement in BulkStringParser.Repeat(arrayLength)
+                                            from arrayElement in BulkStringParser.Or(NullParser).Repeat(arrayLength)
                                             select arrayElement
                                         ).Select(x => x.ToArray());
 
@@ -33,11 +33,11 @@ namespace Redis.SilverlightClient.Parsers
                                         from _ in Parse.String("\r\n")
                                         select RedisSimpleResponseMessages.OK;
 
-        public static Parser<RedisSimpleResponseMessages> NullParser =
+        public static Parser<string> NullParser =
                                         from dollar in Parse.Char('$')
                                         from minus in Parse.Char('-')
                                         from one in Parse.Char('1')
                                         from _ in Parse.String("\r\n")
-                                        select RedisSimpleResponseMessages.Null;
+                                        select null as string;
     }
 }

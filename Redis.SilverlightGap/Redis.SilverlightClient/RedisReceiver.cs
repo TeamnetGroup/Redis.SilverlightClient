@@ -1,7 +1,4 @@
-﻿using Redis.SilverlightClient.Sockets;
-using System;
-using System.Diagnostics;
-using System.Net;
+﻿using System;
 using System.Net.Sockets;
 using System.Reactive;
 using System.Reactive.Concurrency;
@@ -9,27 +6,19 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Ink;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
-using System.Windows.Shapes;
 
 namespace Redis.SilverlightClient
 {
     class RedisReceiver
     {
-        private readonly ConnectionToken connectionToken;
+        private readonly SocketAsyncEventArgs connectedSocketToken;
 
-        public RedisReceiver(ConnectionToken connectionToken)
+        public RedisReceiver(SocketAsyncEventArgs connectedSocketToken)
         {
-            if (connectionToken == null)
-                throw new ArgumentNullException("connectionToken");
+            if (connectedSocketToken == null || connectedSocketToken.UserToken == null)
+                throw new ArgumentNullException("connectedSocketToken");
 
-            this.connectionToken = connectionToken;
+            this.connectedSocketToken = connectedSocketToken;
         }
 
         public IObservable<string> Receive(byte[] buffer, IScheduler scheduler, bool repeat)
@@ -39,9 +28,9 @@ namespace Redis.SilverlightClient
                     var disposable = new CompositeDisposable();
                     var subject = new Subject<Unit>();
 
-                    var disposableEventSubscription = connectionToken.SocketEvent.Completed.ObserveOn(scheduler).Subscribe(_ =>
+                    var disposableEventSubscription = connectedSocketToken.CompletedObservable().ObserveOn(scheduler).Subscribe(_ =>
                     {
-                        if (SendNotificationToObserver(observer, connectionToken.SocketEvent, repeat))
+                        if (SendNotificationToObserver(observer, connectedSocketToken, repeat))
                         {
                             if (repeat)
                             {
@@ -52,11 +41,11 @@ namespace Redis.SilverlightClient
 
                     var disposableActions = subject.ObserveOn(scheduler).Subscribe(_ =>
                     {
-                        connectionToken.SocketEvent.SetBuffer(buffer, 0, buffer.Length);
-
-                        if (!connectionToken.Socket.ReceiveAsync(connectionToken.SocketEvent))
+                        connectedSocketToken.SetBuffer(buffer, 0, buffer.Length);
+                        var socket = connectedSocketToken.UserToken as Socket;
+                        if (!socket.ReceiveAsync(connectedSocketToken))
                         {
-                            if (SendNotificationToObserver(observer, connectionToken.SocketEvent, repeat))
+                            if (SendNotificationToObserver(observer, connectedSocketToken, repeat))
                             {
                                 if (repeat)
                                 {
@@ -76,7 +65,7 @@ namespace Redis.SilverlightClient
                 });
         }
 
-        private bool SendNotificationToObserver(IObserver<string> observer, ISocketAsyncEventArgs socketEvent, bool repeat)
+        private bool SendNotificationToObserver(IObserver<string> observer, SocketAsyncEventArgs socketEvent, bool repeat)
         {
             if (socketEvent.SocketError == SocketError.Success)
             {

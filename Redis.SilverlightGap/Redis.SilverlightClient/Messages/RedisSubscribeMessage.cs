@@ -1,25 +1,31 @@
-﻿using PortableSprache;
-using Redis.SilverlightClient.Parsers;
-using System.Linq;
+﻿using System;
+using System.Net;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Ink;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Shapes;
 
 namespace Redis.SilverlightClient.Messages
 {
     public class RedisSubscribeMessage
     {
-        internal static readonly Parser<RedisSubscribeMessage> SubscribeMessageParser =
-            from arrayOfStrings in RedisParsersModule.ArrayOfBulkStringsParser
-                .Where(x => x.Length == 3 && x[0] == "message")
-            let channelName = arrayOfStrings[1]
-            let content = arrayOfStrings[2]
-            select new RedisSubscribeMessage(channelName, content);
-
-        public RedisSubscribeMessage(string channelName, string content)
+        public RedisSubscribeMessage(string channelName)
         {
+            if (string.IsNullOrEmpty(channelName))
+                throw new ArgumentException("channelName");
+
             this.ChannelName = channelName;
-            this.Content = content;
         }
 
         public string ChannelName { get; private set; }
-        public string Content { get; private set; }
+
+        public override string ToString()
+        {
+            return string.Format("*2\r\n$9\r\nSUBSCRIBE\r\n${0}\r\n{1}\r\n", ChannelName.Length, ChannelName);
+        }
     }
 }

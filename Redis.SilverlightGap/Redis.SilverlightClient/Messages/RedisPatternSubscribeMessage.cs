@@ -1,7 +1,4 @@
-﻿using PortableSprache;
-using Redis.SilverlightClient.Parsers;
-using System;
-using System.Linq;
+﻿using System;
 using System.Net;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,23 +13,19 @@ namespace Redis.SilverlightClient.Messages
 {
     public class RedisPatternSubscribeMessage
     {
-        internal static readonly Parser<RedisPatternSubscribeMessage> SubscribeMessageParser =
-            from arrayOfStrings in RedisParsersModule.ArrayOfBulkStringsParser
-                .Where(x => x.Length == 4 && x[0] == "pmessage")
-            let patternName = arrayOfStrings[1]
-            let channelName = arrayOfStrings[2]
-            let content = arrayOfStrings[3]
-            select new RedisPatternSubscribeMessage(patternName, channelName, content);
-
-        public RedisPatternSubscribeMessage(string pattern, string channelName, string content)
+        public RedisPatternSubscribeMessage(string channelPattern)
         {
-            this.Pattern = pattern;
-            this.ChannelName = channelName;
-            this.Content = content;
+            if (string.IsNullOrEmpty(channelPattern))
+                throw new ArgumentException("channelPattern");
+
+            this.ChannelPattern = channelPattern;
         }
 
-        public string Pattern { get; private set; }
-        public string ChannelName { get; private set; }
-        public string Content { get; private set; }
+        public string ChannelPattern { get; private set; }
+
+        public override string ToString()
+        {
+            return string.Format("*2\r\n$10\r\nPSUBSCRIBE\r\n${0}\r\n{1}\r\n", ChannelPattern.Length, ChannelPattern);
+        }
     }
 }

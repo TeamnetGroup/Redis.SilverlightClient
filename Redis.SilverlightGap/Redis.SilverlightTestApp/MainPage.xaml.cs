@@ -7,6 +7,7 @@ using System.Windows.Controls;
 
 using Redis.SilverlightClient;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Redis.SilverlightTestApp
 {
@@ -21,8 +22,8 @@ namespace Redis.SilverlightTestApp
 
         void buttonSendMessage_Click(object sender, RoutedEventArgs e)
         {
-            var publisher = new RedisPublisher("127.0.0.1", 4525, TaskPoolScheduler.Default);
-            publisher.PublishMessage("test-alert", textBoxMessage.Text);
+            var connection = new RedisConnection("127.0.0.1", 4525, TaskPoolScheduler.Default);
+            connection.AsPublisher().PublishMessage("test-alert", textBoxMessage.Text);
         }
 
         void MainPageLoaded(object sender, RoutedEventArgs e)
