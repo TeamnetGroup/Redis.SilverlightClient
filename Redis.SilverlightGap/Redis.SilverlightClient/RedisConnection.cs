@@ -50,30 +50,27 @@ namespace Redis.SilverlightClient
 
             var pipelineDisposable = inboxChannel.ObserveOn(scheduler).Select(message =>
             {
-                try
-                {
-                    return Observable.FromAsync(async () =>
+                return Observable.FromAsync(async () =>
                     {
-                        var connector = await transmitterReceiverObservable;
-                        await message(connector.Transmitter, connector.Receiver, null);
-                    });
+                        Exception catchedException = null;
+                        try
+                        {
+                            var connector = await transmitterReceiverObservable;
+                            await message(connector.Transmitter, connector.Receiver, null);
+                        }
+                        catch (AggregateException exception)
+                        {
+                            exception.Handle(_ => true);
+                            catchedException = exception;
+                        }
+                        catch (RedisException exception)
+                        {
+                            catchedException = exception;
+                        }
 
-                }
-                catch (AggregateException exception)
-                {
-                    exception.Handle(_ => true);
-                    return Observable.FromAsync(async () =>
-                    {
-                        await message(null, null, exception);
+                        if(catchedException != null)
+                            await message(null, null, catchedException);
                     });
-                }
-                catch (RedisException exception)
-                {
-                    return Observable.FromAsync(async () =>
-                    {
-                        await message(null, null, exception);
-                    });
-                }
             }).Merge().Subscribe();
 
             compositeDisposable.Add(socket);
