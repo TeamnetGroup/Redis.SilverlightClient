@@ -8,20 +8,15 @@ namespace Redis.SilverlightClient.Messages
 {
     public class RedisSetValuesMessage
     {
-        public RedisSetValuesMessage(IEnumerable<KeyValuePair<string, string>> keyValuePairs, TaskCompletionSource<string> callback)
+        public RedisSetValuesMessage(IEnumerable<KeyValuePair<string, string>> keyValuePairs)
         {
             if (keyValuePairs == null)
                 throw new ArgumentNullException("keyValuePairs");
 
-            if (callback == null)
-                throw new ArgumentNullException("callback");
-
             KeyValuePairs = keyValuePairs;
-            Callback = callback;
         }
 
         public IEnumerable<KeyValuePair<string,string>> KeyValuePairs { get; private set; }
-        public TaskCompletionSource<string> Callback { get; private set; }
 
         public override string ToString()
         {

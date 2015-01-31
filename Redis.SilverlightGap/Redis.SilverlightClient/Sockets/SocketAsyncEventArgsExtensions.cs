@@ -2,7 +2,7 @@
 using System.Net.Sockets;
 using System.Reactive.Linq;
 
-namespace Redis.SilverlightClient
+namespace Redis.SilverlightClient.Sockets
 {
     public static class SocketAsyncEventArgsExtensions
     {

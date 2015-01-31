@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Redis.SilverlightClient
 {
-    public interface IRedisCacheClient : IDisposable
+    public interface IRedisCacheClient 
     {
         Task SetValue(string key, string value);
         Task SetValue(string key, string value, TimeSpan? ttl);

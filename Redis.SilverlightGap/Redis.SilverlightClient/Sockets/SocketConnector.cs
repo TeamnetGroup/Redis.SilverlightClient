@@ -5,14 +5,14 @@ using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 
-namespace Redis.SilverlightClient
+namespace Redis.SilverlightClient.Sockets
 {
-    class RedisConnector
+    public class SocketConnector 
     {
         private readonly Func<Socket> socketFactory;
         private readonly Func<SocketAsyncEventArgs> socketEventsFactory;
 
-        public RedisConnector(Func<Socket> socketFactory, Func<SocketAsyncEventArgs> socketEventsFactory)
+        public SocketConnector(Func<Socket> socketFactory, Func<SocketAsyncEventArgs> socketEventsFactory)
         {
             if (socketFactory == null)
                 throw new ArgumentNullException("socketFactory");
@@ -24,9 +24,9 @@ namespace Redis.SilverlightClient
             this.socketEventsFactory = socketEventsFactory;
         }
 
-        public IObservable<SocketAsyncEventArgs> BuildConnectionToken(string host, int port, IScheduler scheduler)
+        public IObservable<Socket> Connect(string host, int port, IScheduler scheduler)
         {
-            return Observable.Create<SocketAsyncEventArgs>(observer =>
+            return Observable.Create<Socket>(observer =>
             {
                 var disposable = new CompositeDisposable();
 
@@ -57,11 +57,11 @@ namespace Redis.SilverlightClient
             });
         }
 
-        private void SendNotificationToObserver(IObserver<SocketAsyncEventArgs> observer, SocketAsyncEventArgs socketEvent)
+        private void SendNotificationToObserver(IObserver<Socket> observer, SocketAsyncEventArgs socketEvent)
         {
             if (socketEvent.SocketError == SocketError.Success)
             {
-                observer.OnNext(socketEvent);
+                observer.OnNext((Socket)socketEvent.UserToken);
                 observer.OnCompleted();
             }
             else

@@ -10,6 +10,5 @@ namespace Redis.MessageParsers
         private RedisSimpleResponseMessages() { }
 
         public static readonly RedisSimpleResponseMessages OK = new RedisSimpleResponseMessages();
-        public static readonly RedisSimpleResponseMessages Null = new RedisSimpleResponseMessages();
     }
 }

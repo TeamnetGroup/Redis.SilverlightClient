@@ -1,143 +1,75 @@
 ﻿using PortableSprache;
 using Redis.SilverlightClient.Messages;
+using Redis.SilverlightClient.Parsers;
+using Redis.SilverlightClient.Sockets;
 using System;
-using System.Net.Sockets;
+using System.Collections.Generic;
 using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
+using System.Reactive.Threading.Tasks;
+using System.Threading.Tasks;
 using System.Reactive.Linq;
+using System.Linq;
+using System.Reactive.Subjects;
+using System.Reactive.Disposables;
 
 namespace Redis.SilverlightClient
 {
-    public static class RedisSubscriber
+    public class RedisSubscriber : IDisposable
     {
-        public static IObservable<RedisChannelMessage> SubscribeToChannel(string host, int port, string channel)
+        private readonly SocketConnection socketConnection;
+        private readonly byte[] buffer;
+        private readonly Subject<string> upstream;
+        private readonly CompositeDisposable disposables;
+
+        public RedisSubscriber(SocketConnection socketConnection)
         {
-            return SubscribeToChannel(host, port, channel, Scheduler.Default);
-        }
+            if (socketConnection == null)
+                throw new ArgumentNullException("socketConnection");
 
-        public static IObservable<RedisChannelMessage> SubscribeToChannel(string host, int port, string channel, IScheduler scheduler)
-        {
-            if(string.IsNullOrEmpty(host))
-                throw new ArgumentException("host");
+            this.socketConnection = socketConnection;
+            this.buffer = new byte[4096];
+            this.upstream = new Subject<string>();
 
-            if (port < 4502 || port > 4534)
-                throw new ArgumentException("Port must be in range 4502-4534 due to Silverlight network access restrictions");
-
-            if (string.IsNullOrEmpty(channel))
-                throw new ArgumentException("channel");
-
-            if (scheduler == null)
-                throw new ArgumentNullException("scheduler");
-
-            var wireMessage = string.Format("*2\r\n$9\r\nSUBSCRIBE\r\n${0}\r\n{1}\r\n", channel.Length, channel);
-            var receivedMessagesParts = SubscribeToRedisWithMessage(host, port, wireMessage, scheduler).Skip(1);
-
-            return Observable.Create<RedisChannelMessage>(observer =>
+            socketConnection.Scheduler.Schedule(self =>
             {
-                var remainder = string.Empty;
-
-                return receivedMessagesParts.ObserveOn(scheduler).Subscribe(
-                    part =>
-                    {
-                        var parseTry = RedisChannelMessage.SubscribeMessageParser.TryParse(remainder + part);
-
-                        if (!parseTry.WasSuccessful)
-                        {
-                            remainder += part;
-                        }
-
-                        while (parseTry.WasSuccessful)
-                        {
-                            remainder = string.Empty;
-                            observer.OnNext(parseTry.Value);
-
-                            if (!parseTry.Remainder.AtEnd)
-                            {
-                                remainder += parseTry.Remainder.Source.Substring(parseTry.Remainder.Position);
-                            }
-
-                            parseTry = RedisChannelMessage.SubscribeMessageParser.TryParse(remainder);
-                        }
-                    },
-                    observer.OnError);
+                socketConnection
+                    .Connection
+                    .Select(connection => connection.Item2.Receive(buffer, socketConnection.Scheduler))
+                    .Merge(1)
+                    .Do(_ => self())
+                    .Subscribe(upstream);
             });
         }
 
-        public static IObservable<RedisChannelPatternMessage> SubscribeToChannelPattern(
-            string host,
-            int port,
-            string channelPattern)
+        public IObservable<RedisChannelMessage> Subscribe(params string[] channelNames)
         {
-            return SubscribeToChannelPattern(host, port, channelPattern, Scheduler.Default);
-        }
+            var subscribeMessage = new RedisSubscribeMessage(channelNames);
 
-        public static IObservable<RedisChannelPatternMessage> SubscribeToChannelPattern(string host, int port, string channelPattern, IScheduler scheduler)
-        {
-            if (string.IsNullOrEmpty(host))
-                throw new ArgumentException("host");
-
-            if (port < 4502 || port > 4534)
-                throw new ArgumentException("Port must be in range 4502-4534 due to Silverlight network access restrictions");
-
-            if (string.IsNullOrEmpty(channelPattern))
-                throw new ArgumentException("channelPattern");
-
-            if (scheduler == null)
-                throw new ArgumentNullException("scheduler");
-
-            var wireMessage = string.Format("*2\r\n$10\r\nPSUBSCRIBE\r\n${0}\r\n{1}\r\n", channelPattern.Length, channelPattern);
-            var receivedMessagesParts = SubscribeToRedisWithMessage(host, port, wireMessage, scheduler).Skip(1);
-
-            return Observable.Create<RedisChannelPatternMessage>(observer =>
+            return socketConnection.Connection.Select(connection =>
             {
-                var remainder = string.Empty;
-
-                return receivedMessagesParts.ObserveOn(scheduler).Subscribe(part =>
-                {
-                    var parseTry = RedisChannelPatternMessage.SubscribeMessageParser.TryParse(remainder + part);
-
-                    if (!parseTry.WasSuccessful)
+                return connection.Item1
+                    .SendMessage(subscribeMessage.ToString(), socketConnection.Scheduler)
+                    .Select(_ => upstream.Select(part =>
                     {
-                        remainder += part;
-                    }
+                        var subscriptionMessageResult = RedisParsersModule.SubscriptionMessageParser.TryParse(part);
+                        if (subscriptionMessageResult.WasSuccessful)
+                            return null;
 
-                    while (parseTry.WasSuccessful)
-                    {
-                        remainder = string.Empty;
-                        observer.OnNext(parseTry.Value);
+                        var channelMessageResult = RedisChannelMessage.RedisChannelMessageParser.TryParse(part);
 
-                        if (!parseTry.Remainder.AtEnd)
-                        {
-                            remainder += parseTry.Remainder.Source.Substring(parseTry.Remainder.Position);
-                        }
+                        if (!channelMessageResult.WasSuccessful)
+                            throw new ParseException(string.Format("Invalid subscriber message: {0}", part));
 
-                        parseTry = RedisChannelPatternMessage.SubscribeMessageParser.TryParse(remainder);
-                    }
-                }, ex => observer.OnError(ex));
-            });
+                        return channelMessageResult.Value;
+                    })).Merge(1).Where(x => x != null);
+            }).Merge(1);
         }
 
-        private static IObservable<string> SubscribeToRedisWithMessage(string host, int port, string message, IScheduler scheduler)
+        public void Dispose()
         {
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            var socketAsyncEventArgs = new SocketAsyncEventArgs();
-
-            var redisConnector = new RedisConnector(
-                                    () => socket,
-                                    () => socketAsyncEventArgs);
-
-            var result = from connection in redisConnector.BuildConnectionToken(host, port, scheduler)
-                         let transmitter = new RedisTransmitter(connection)
-                         from _ in transmitter.SendMessage(message, scheduler)
-                         let receiver = new RedisReceiver(connection)
-                         from messageReceived in receiver.Receive(new byte[4096], scheduler, repeat: true)
-                         select messageReceived;
-
-            var disposables = new CompositeDisposable();
-            disposables.Add(socket);
-            disposables.Add(socketAsyncEventArgs);
-
-            return Observable.Using(() => disposables, _ => result);
+            upstream.OnCompleted();
+            upstream.Dispose();
+            socketConnection.Dispose();
         }
     }
 }

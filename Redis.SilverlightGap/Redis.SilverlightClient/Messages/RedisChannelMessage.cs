@@ -6,7 +6,7 @@ namespace Redis.SilverlightClient.Messages
 {
     public class RedisChannelMessage
     {
-        internal static readonly Parser<RedisChannelMessage> SubscribeMessageParser =
+        internal static readonly Parser<RedisChannelMessage> RedisChannelMessageParser =
             from arrayOfStrings in RedisParsersModule.ArrayOfBulkStringsParser
                 .Where(x => x.Length == 3 && x[0] == "message")
             let channelName = arrayOfStrings[1]

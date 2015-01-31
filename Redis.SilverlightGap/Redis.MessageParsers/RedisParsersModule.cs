@@ -23,6 +23,16 @@ namespace Redis.SilverlightClient.Parsers
                                             select arrayElement
                                         ).Select(x => x.ToArray());
 
+        public static Parser<string[]> SubscriptionMessageParser =
+                                        (
+                                            from star in Parse.Char('*')
+                                            from arrayLength in Parse.Number.Select(int.Parse)
+                                            from _ in Parse.String("\r\n")
+                                            from arrayElement in BulkStringParser.Repeat(arrayLength - 1)
+                                            from channelSubscribed in IntegerParser
+                                            select arrayElement
+                                        ).Select(x => x.ToArray());
+
         public static Parser<int> IntegerParser =
                                     from colon in Parse.Char(':')
                                     from integer in Parse.Number.Select(int.Parse)

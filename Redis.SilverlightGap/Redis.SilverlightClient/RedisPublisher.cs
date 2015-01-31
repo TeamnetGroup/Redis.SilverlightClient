@@ -1,63 +1,54 @@
 ﻿using PortableSprache;
 using Redis.SilverlightClient.Messages;
 using Redis.SilverlightClient.Parsers;
+using Redis.SilverlightClient.Sockets;
 using System;
 using System.Reactive.Concurrency;
 using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
+using System.Reactive.Linq;
+using System.Linq;
 
 namespace Redis.SilverlightClient
 {
-    internal class RedisPublisher : IRedisPublisher
+    internal class RedisPublisher : IRedisPublisher, IDisposable
     {
-        private readonly RedisConnection redisConnection;
-        private readonly IScheduler scheduler;
+        private readonly SocketConnection socketConnection;
         private readonly byte[] buffer;
 
-        public RedisPublisher(RedisConnection redisConnection, IScheduler scheduler)
+        public RedisPublisher(SocketConnection socketConnection)
         {
-            if (redisConnection == null)
-                throw new ArgumentNullException("redisConnection");
+            if (socketConnection == null)
+                throw new ArgumentNullException("socketConnection");
 
-            if (scheduler == null)
-                throw new ArgumentNullException("scheduler");
-
-            this.redisConnection = redisConnection;
-            this.scheduler = scheduler;
+            this.socketConnection = socketConnection;
             this.buffer = new byte[4096];
         }
          
-        public Task<int> PublishMessage(string channel, string message)
+        public Task<int> PublishMessage(string channelName, string message)
         {
-            var callback = new TaskCompletionSource<int>();
-            var publishMessage = new RedisPublishMessage(channel, message);
+            var publishMessage = new RedisPublishMessage(channelName, message);
 
-            redisConnection.Inbox.OnNext(async (transmitter, receiver, ex) =>
+            return socketConnection.Connection.Select(connection =>
             {
-                if (ex != null)
+                var request = connection.Item1.SendMessage(publishMessage.ToString(), socketConnection.Scheduler);
+                var response = connection.Item2.Receive(buffer, socketConnection.Scheduler);
+
+                return request.Zip(response, (_, result) => result).Select(result =>
                 {
-                    callback.SetException(ex);
-                    var tcs = new TaskCompletionSource<bool>();
-                    tcs.SetResult(true);
-                    await tcs.Task;
-                    return;
-                }
+                    var pongs = RedisParsersModule.IntegerParser.TryParse(result);
 
-                await transmitter.SendMessage(publishMessage.ToString(), scheduler).ToTask();
-                var response = await receiver.Receive(buffer, scheduler, false).ToTask();
+                    if (!pongs.WasSuccessful)
+                        throw new ParseException(string.Format("Invalid integer response for published message: {0}", result));
 
-                var pongs = RedisParsersModule.IntegerParser.TryParse(response);
-                if (!pongs.WasSuccessful)
-                        callback.SetException(new ParseException(string.Format("Invalid integer response for published message: {0}", response)));
-
-                callback.SetResult(pongs.Value);
-            });
-            return callback.Task;
+                    return pongs.Value;
+                });
+            }).Merge().ToTask();
         }
 
         public void Dispose()
         {
-            redisConnection.Dispose();
+            socketConnection.Dispose();
         }
     }
 }

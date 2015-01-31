@@ -91,7 +91,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IRedisCacheClient.cs" />
-    <Compile Include="IRedisConnection.cs" />
+    <Compile Include="SocketConnectionExtensions.cs" />
     <Compile Include="IRedisPublisher.cs" />
     <Compile Include="Messages\RedisGetValueMessage.cs" />
     <Compile Include="Messages\RedisGetValuesMessage.cs" />
@@ -104,15 +104,14 @@
     <Compile Include="Messages\RedisSubscribeMessage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RedisCacheClient.cs" />
-    <Compile Include="RedisConnection.cs" />
-    <Compile Include="RedisConnector.cs" />
+    <Compile Include="Sockets\SocketConnection.cs" />
+    <Compile Include="Sockets\SocketConnector.cs" />
     <Compile Include="RedisException.cs" />
     <Compile Include="RedisPublisher.cs" />
-    <Compile Include="RedisReceiver.cs" />
+    <Compile Include="Sockets\SocketReceiver.cs" />
     <Compile Include="RedisSubscriber.cs" />
-    <Compile Include="RedisTransmitter.cs" />
-    <Compile Include="RedisTransmitterReceiver.cs" />
-    <Compile Include="SocketAsyncEventArgsExtensions.cs" />
+    <Compile Include="Sockets\SocketTransmitter.cs" />
+    <Compile Include="Sockets\SocketAsyncEventArgsExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

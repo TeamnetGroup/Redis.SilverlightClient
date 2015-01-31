@@ -6,18 +6,23 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Text;
 
-namespace Redis.SilverlightClient
+namespace Redis.SilverlightClient.Sockets
 {
-    class RedisTransmitter
+    public class SocketTransmitter : IDisposable
     {
-        private readonly SocketAsyncEventArgs connectedSocketToken;
+        private readonly Socket connectedSocket;
+        private readonly SocketAsyncEventArgs socketEventArgs;
 
-        public RedisTransmitter(SocketAsyncEventArgs connectedSocketToken)
+        public SocketTransmitter(Socket connectedSocket, SocketAsyncEventArgs socketEventArgs)
         {
-            if (connectedSocketToken == null)
-                throw new ArgumentNullException("connectionToken");
+            if (connectedSocket == null)
+                throw new ArgumentNullException("connectedSocket");
 
-            this.connectedSocketToken = connectedSocketToken;
+            if (socketEventArgs == null)
+                throw new ArgumentNullException("socketEventArgs");
+
+            this.connectedSocket = connectedSocket;
+            this.socketEventArgs = socketEventArgs;
         }
 
         public IObservable<Unit> SendMessage(string message, IScheduler scheduler)
@@ -27,18 +32,17 @@ namespace Redis.SilverlightClient
                 var disposable = new CompositeDisposable();
                 var buffer = Encoding.UTF8.GetBytes(message);
 
-                var disposableCompletedSubscription = connectedSocketToken.CompletedObservable().ObserveOn(scheduler).Subscribe(_ =>
+                var disposableCompletedSubscription = socketEventArgs.CompletedObservable().ObserveOn(scheduler).Subscribe(_ =>
                 {
-                    SendNotificationToObserver(observer, connectedSocketToken);
+                    SendNotificationToObserver(observer, socketEventArgs);
                 });
 
                 var disposableActions = scheduler.Schedule(() =>
                 {
-                    connectedSocketToken.SetBuffer(buffer, 0, buffer.Length);
-                    var socket = connectedSocketToken.UserToken as Socket;
-                    if (!socket.SendAsync(connectedSocketToken))
+                    socketEventArgs.SetBuffer(buffer, 0, buffer.Length);
+                    if (!connectedSocket.SendAsync(socketEventArgs))
                     {
-                        SendNotificationToObserver(observer, connectedSocketToken);
+                        SendNotificationToObserver(observer, socketEventArgs);
                     }
                 });
 
@@ -60,6 +64,12 @@ namespace Redis.SilverlightClient
             {
                 observer.OnError(new RedisException(socketEvent.SocketError));
             }
+        }
+
+        public void Dispose()
+        {
+            this.connectedSocket.Dispose();
+            this.socketEventArgs.Dispose();
         }
     }
 }

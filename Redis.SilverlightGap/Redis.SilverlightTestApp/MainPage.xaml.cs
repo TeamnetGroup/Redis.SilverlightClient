@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using Redis.SilverlightClient;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Redis.SilverlightClient.Sockets;
 
 namespace Redis.SilverlightTestApp
 {
@@ -20,24 +21,35 @@ namespace Redis.SilverlightTestApp
             this.buttonSendMessage.Click += buttonSendMessage_Click;
         }
 
-        void buttonSendMessage_Click(object sender, RoutedEventArgs e)
+        async void buttonSendMessage_Click(object sender, RoutedEventArgs e)
         {
-            var connection = new RedisConnection("127.0.0.1", 4525, TaskPoolScheduler.Default);
-            connection.AsPublisher().PublishMessage("test-alert", textBoxMessage.Text);
+            try
+            {
+                var connection = new SocketConnection("127.0.0.1", 4525, TaskPoolScheduler.Default);
+                await connection.AsPublisher().PublishMessage("test-alert", textBoxMessage.Text);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }
         }
 
         void MainPageLoaded(object sender, RoutedEventArgs e)
         {
-            RedisSubscriber.SubscribeToChannel("127.0.0.1", 4525, "test-alert")
-                .ObserveOn(SynchronizationContext.Current)
+            var connection = new SocketConnection("127.0.0.1", 4525, TaskPoolScheduler.Default);
+            var currentSyncronizationContext = SynchronizationContext.Current;
+
+            connection.AsSubscriber()
+                .Subscribe("test-alert")
+                .ObserveOn(currentSyncronizationContext)
                 .Subscribe(message =>
-                    {
-                        listBoxAlerts.Items.Add(new ListBoxItem { Content = message.Content });
-                    },
-                    ex =>
-                    {
-                        MessageBox.Show(ex.ToString());
-                    });
+                 {
+                    listBoxAlerts.Items.Add(new ListBoxItem { Content = message.Content });
+                 },
+                 ex =>
+                 {
+                      MessageBox.Show(ex.ToString());
+                 });
         }
     }
 }
