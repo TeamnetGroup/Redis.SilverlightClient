@@ -34,7 +34,7 @@ namespace Redis.SilverlightClient
             {
                 socketConnection
                     .Connection
-                    .Select(connection => connection.Item2.Receive(buffer, socketConnection.Scheduler))
+                    .Select(connection => connection.ReceiveMessage())
                     .Merge(1)
                     .Do(_ => self())
                     .Subscribe(upstream);
@@ -47,8 +47,8 @@ namespace Redis.SilverlightClient
 
             return socketConnection.Connection.Select(connection =>
             {
-                return connection.Item1
-                    .SendMessage(subscribeMessage.ToString(), socketConnection.Scheduler)
+                return connection
+                    .SendMessage(subscribeMessage.ToString())
                     .Select(_ => upstream.Select(part =>
                     {
                         var subscriptionMessageResult = RedisParsersModule.SubscriptionMessageParser.TryParse(part);

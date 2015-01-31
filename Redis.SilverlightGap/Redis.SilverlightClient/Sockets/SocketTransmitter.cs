@@ -8,12 +8,9 @@ using System.Text;
 
 namespace Redis.SilverlightClient.Sockets
 {
-    public class SocketTransmitter : IDisposable
+    public class SocketTransmitter
     {
-        private readonly Socket connectedSocket;
-        private readonly SocketAsyncEventArgs socketEventArgs;
-
-        public SocketTransmitter(Socket connectedSocket, SocketAsyncEventArgs socketEventArgs)
+        public IObservable<Unit> SendMessage(Socket connectedSocket, SocketAsyncEventArgs socketEventArgs, IScheduler scheduler, string message)
         {
             if (connectedSocket == null)
                 throw new ArgumentNullException("connectedSocket");
@@ -21,12 +18,6 @@ namespace Redis.SilverlightClient.Sockets
             if (socketEventArgs == null)
                 throw new ArgumentNullException("socketEventArgs");
 
-            this.connectedSocket = connectedSocket;
-            this.socketEventArgs = socketEventArgs;
-        }
-
-        public IObservable<Unit> SendMessage(string message, IScheduler scheduler)
-        {
             return Observable.Create<Unit>(observer =>
             {
                 var disposable = new CompositeDisposable();
@@ -64,12 +55,6 @@ namespace Redis.SilverlightClient.Sockets
             {
                 observer.OnError(new RedisException(socketEvent.SocketError));
             }
-        }
-
-        public void Dispose()
-        {
-            this.connectedSocket.Dispose();
-            this.socketEventArgs.Dispose();
         }
     }
 }

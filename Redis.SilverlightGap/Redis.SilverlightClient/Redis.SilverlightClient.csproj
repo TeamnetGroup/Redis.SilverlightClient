@@ -112,6 +112,7 @@
     <Compile Include="RedisSubscriber.cs" />
     <Compile Include="Sockets\SocketTransmitter.cs" />
     <Compile Include="Sockets\SocketAsyncEventArgsExtensions.cs" />
+    <Compile Include="Sockets\SocketTransmitterReceiver.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

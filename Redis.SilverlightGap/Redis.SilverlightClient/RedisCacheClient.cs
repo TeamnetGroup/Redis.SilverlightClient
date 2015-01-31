@@ -37,8 +37,8 @@ namespace Redis.SilverlightClient
 
             return socketConnection.Connection.Select(connection =>
             {
-                var request = connection.Item1.SendMessage(setValueMessage.ToString(), socketConnection.Scheduler);
-                var response = connection.Item2.Receive(buffer, socketConnection.Scheduler);
+                var request = connection.SendMessage(setValueMessage.ToString());
+                var response = connection.ReceiveMessage();
 
                 return request.Zip(response, (_, result) => result).Select(result =>
                 {
@@ -58,8 +58,8 @@ namespace Redis.SilverlightClient
 
             return socketConnection.Connection.Select(connection =>
             {
-                var request = connection.Item1.SendMessage(getValueMessage.ToString(), socketConnection.Scheduler);
-                var response = connection.Item2.Receive(buffer, socketConnection.Scheduler);
+                var request = connection.SendMessage(getValueMessage.ToString());
+                var response = connection.ReceiveMessage();
 
                 return request.Zip(response, (_, result) => result).Select(result =>
                 {
@@ -86,8 +86,8 @@ namespace Redis.SilverlightClient
             
             return socketConnection.Connection.Select(connection =>
             {
-                var request = connection.Item1.SendMessage(setValuesMessage.ToString(), socketConnection.Scheduler);
-                var response = connection.Item2.Receive(buffer, socketConnection.Scheduler);
+                var request = connection.SendMessage(setValuesMessage.ToString());
+                var response = connection.ReceiveMessage();
 
                 return request.Zip(response, (_, result) => result).Select(result =>
                 {
@@ -107,8 +107,8 @@ namespace Redis.SilverlightClient
 
             return socketConnection.Connection.Select(connection =>
             {
-                var request = connection.Item1.SendMessage(getValuesMessage.ToString(), socketConnection.Scheduler);
-                var response = connection.Item2.Receive(buffer, socketConnection.Scheduler);
+                var request = connection.SendMessage(getValuesMessage.ToString());
+                var response = connection.ReceiveMessage();
 
                 return request.Zip(response, (_, result) => result).Select(result =>
                 {

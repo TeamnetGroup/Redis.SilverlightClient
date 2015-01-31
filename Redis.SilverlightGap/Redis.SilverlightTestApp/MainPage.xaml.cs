@@ -50,6 +50,11 @@ namespace Redis.SilverlightTestApp
                  {
                       MessageBox.Show(ex.ToString());
                  });
+
+            Observable.Timer(TimeSpan.FromSeconds(30)).ObserveOn(currentSyncronizationContext).Subscribe(_ =>
+                {
+                    connection.Dispose();
+                });
         }
     }
 }

@@ -31,8 +31,8 @@ namespace Redis.SilverlightClient
 
             return socketConnection.Connection.Select(connection =>
             {
-                var request = connection.Item1.SendMessage(publishMessage.ToString(), socketConnection.Scheduler);
-                var response = connection.Item2.Receive(buffer, socketConnection.Scheduler);
+                var request = connection.SendMessage(publishMessage.ToString());
+                var response = connection.ReceiveMessage();
 
                 return request.Zip(response, (_, result) => result).Select(result =>
                 {

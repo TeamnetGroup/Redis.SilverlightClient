@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Sockets;
+using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
@@ -11,7 +12,7 @@ namespace Redis.SilverlightClient.Sockets
 {
     public class SocketConnection : IDisposable
     {
-        private readonly BehaviorSubject<Tuple<SocketTransmitter, SocketReceiver>> connectionSubject;
+        private readonly BehaviorSubject<SocketTransmitterReceiver> connectionSubject;
         private readonly IDisposable disposable;
         private readonly IScheduler scheduler;
 
@@ -28,34 +29,43 @@ namespace Redis.SilverlightClient.Sockets
 
             this.scheduler = scheduler;
             var compositeDisposable = new CompositeDisposable();
+
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            var socketAsyncEventArgs = new SocketAsyncEventArgs();
+            var connectArgs = new SocketAsyncEventArgs();
+            var sendArgs = new SocketAsyncEventArgs();
+            var receiveArgs = new SocketAsyncEventArgs();
+
+            compositeDisposable.Add(socket);
+            compositeDisposable.Add(connectArgs);
+            compositeDisposable.Add(sendArgs);
+            compositeDisposable.Add(receiveArgs);
+
             var socketConnector = new SocketConnector(
                                     () => socket,
-                                    () => socketAsyncEventArgs);
+                                    () => connectArgs);
 
-            var cancellationDisposable = new CancellationDisposable();
-
-            connectionSubject = new BehaviorSubject<Tuple<SocketTransmitter, SocketReceiver>>(null);
+            connectionSubject = new BehaviorSubject<SocketTransmitterReceiver>(null);
             var connectorDisposable = socketConnector
                 .Connect(host, port, scheduler)
                 .Select(connectedSocket =>
                 {
-                    var transmitter = new SocketTransmitter(connectedSocket, new SocketAsyncEventArgs());
-                    var receiver = new SocketReceiver(connectedSocket, new SocketAsyncEventArgs());
+                    var transmitter = new SocketTransmitter();
+                    var receiver = new SocketReceiver();
+                    var buffer = new byte[4096];
 
-                    return new Tuple<SocketTransmitter, SocketReceiver>(transmitter, receiver);
-                }).Concat(Observable.Never<Tuple<SocketTransmitter, SocketReceiver>>()).Subscribe(connectionSubject);
+                    return new SocketTransmitterReceiver(
+                         message => transmitter.SendMessage(connectedSocket, sendArgs, scheduler, message),
+                         () => receiver.Receive(connectedSocket, receiveArgs, scheduler, buffer));
 
-            compositeDisposable.Add(socket);
-            compositeDisposable.Add(socketAsyncEventArgs);
+                }).Concat(Observable.Never<SocketTransmitterReceiver>()).Subscribe(connectionSubject);
+
             compositeDisposable.Add(connectionSubject);
             compositeDisposable.Add(connectorDisposable);
 
             disposable = compositeDisposable;
         }
 
-        public IObservable<Tuple<SocketTransmitter, SocketReceiver>> Connection 
+        public IObservable<SocketTransmitterReceiver> Connection 
         {
             get { return connectionSubject.Where(x => x != null).ObserveOn(scheduler); }
         }

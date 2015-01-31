@@ -11,10 +11,7 @@ namespace Redis.SilverlightClient.Sockets
 {
     public class SocketReceiver
     {
-        private readonly Socket connectedSocket;
-        private readonly SocketAsyncEventArgs socketEventArgs;
-
-        public SocketReceiver(Socket connectedSocket, SocketAsyncEventArgs socketEventArgs)
+        public IObservable<string> Receive(Socket connectedSocket, SocketAsyncEventArgs socketEventArgs, IScheduler scheduler, byte[] buffer)
         {
             if (connectedSocket == null)
                 throw new ArgumentNullException("connectedSocket");
@@ -22,12 +19,6 @@ namespace Redis.SilverlightClient.Sockets
             if (socketEventArgs == null)
                 throw new ArgumentNullException("socketEventArgs");
 
-            this.connectedSocket = connectedSocket;
-            this.socketEventArgs = socketEventArgs;
-        }
-
-        public IObservable<string> Receive(byte[] buffer, IScheduler scheduler)
-        {
             return Observable.Create<string>(observer =>
             {
                 var disposable = new CompositeDisposable();
