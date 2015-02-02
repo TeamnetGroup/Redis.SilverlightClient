@@ -20,7 +20,10 @@ namespace Redis.SilverlightClient.Messages
 
         public RedisSubscribeMessage(string[] channelNames)
         {
-            if (channelNames == null || channelNames.Length == 0)
+            if (channelNames == null)
+                throw new ArgumentNullException("channelNames");
+
+            if (channelNames.Length == 0)
                 throw new ArgumentException("channelNames");
 
             this.channelNames = channelNames;

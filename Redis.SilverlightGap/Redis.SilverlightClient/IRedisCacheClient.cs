@@ -10,6 +10,7 @@ namespace Redis.SilverlightClient
         Task SetValue(string key, string value, TimeSpan? ttl);
         Task<string> GetValue(string key);
         Task SetValues(IEnumerable<KeyValuePair<string, string>> keyValuePairs);
-        Task<IEnumerable<string>> GetValues(IEnumerable<string> keys);
+        Task<IEnumerable<string>> GetValues(params string[] keys);
+        Task<int> Del(params string[] keys);
     }
 }

@@ -13,6 +13,9 @@ namespace Redis.SilverlightClient.Messages
             if (keyValuePairs == null)
                 throw new ArgumentNullException("keyValuePairs");
 
+            if (keyValuePairs.Count() == 0)
+                throw new ArgumentException("keyValuePairs");
+
             KeyValuePairs = keyValuePairs;
         }
 

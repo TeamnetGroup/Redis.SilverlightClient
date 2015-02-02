@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Redis.SilverlightClient
 {
-    public class RedisSubscriber : IDisposable
+    public class RedisSubscriber : IRedisSubscriber, IDisposable
     {
         private readonly SocketConnection socketConnection;
         private readonly byte[] buffer;
