@@ -21,7 +21,7 @@ namespace Redis.SilverlightClient
             return new RedisPublisher(socketConnection);
         }
 
-        public static RedisSubscriber AsSubscriber(this SocketConnection socketConnection)
+        public static IRedisSubscriber AsSubscriber(this SocketConnection socketConnection)
         {
             if (socketConnection == null)
                 throw new ArgumentException("socketConnection");
