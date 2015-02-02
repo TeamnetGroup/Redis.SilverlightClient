@@ -34,7 +34,6 @@ namespace Redis.SilverlightClient.Sockets
                 var socketEvent = socketEventsFactory();
 
                 socketEvent.RemoteEndPoint = new DnsEndPoint(host, port);
-                socketEvent.SocketClientAccessPolicyProtocol = System.Net.Sockets.SocketClientAccessPolicyProtocol.Tcp;
                 socketEvent.UserToken = socket;
 
                 var disposableEventSubscription = socketEvent.CompletedObservable().ObserveOn(scheduler).Subscribe(_ =>

@@ -48,7 +48,7 @@ namespace Redis.SilverlightClient.Sockets
                 {
                     var transmitter = new SocketTransmitter();
                     var receiver = new SocketReceiver();
-                    var buffer = new byte[4096];
+                    var buffer = new byte[8192];
 
                     return new SocketTransmitterReceiver(
                          message => transmitter.SendMessage(connectedSocket, sendArgs, scheduler, message),

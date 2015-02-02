@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Redis.MessageParsers", "Red
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParserTests", "ParserTests\ParserTests.csproj", "{1BA46A37-AEA7-4983-9D8F-90A8B037E9EA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Redis.NetClient", "Redis.NetClient\Redis.NetClient.csproj", "{C3F89BE0-0AF5-44FF-A5B2-22BC9F6FD820}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Redis.NetClientTests", "Redis.NetClientTests\Redis.NetClientTests.csproj", "{8A1282A6-B462-4CAB-8499-2A12A90C596F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,6 +41,14 @@ Global
 		{1BA46A37-AEA7-4983-9D8F-90A8B037E9EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1BA46A37-AEA7-4983-9D8F-90A8B037E9EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1BA46A37-AEA7-4983-9D8F-90A8B037E9EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3F89BE0-0AF5-44FF-A5B2-22BC9F6FD820}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3F89BE0-0AF5-44FF-A5B2-22BC9F6FD820}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3F89BE0-0AF5-44FF-A5B2-22BC9F6FD820}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3F89BE0-0AF5-44FF-A5B2-22BC9F6FD820}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A1282A6-B462-4CAB-8499-2A12A90C596F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A1282A6-B462-4CAB-8499-2A12A90C596F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A1282A6-B462-4CAB-8499-2A12A90C596F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A1282A6-B462-4CAB-8499-2A12A90C596F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

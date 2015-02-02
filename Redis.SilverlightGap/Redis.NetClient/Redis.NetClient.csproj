@@ -1,0 +1,148 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{C3F89BE0-0AF5-44FF-A5B2-22BC9F6FD820}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Redis.NetClient</RootNamespace>
+    <AssemblyName>Redis.NetClient</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="PortableSprache">
+      <HintPath>..\lib\PortableSprache.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Reactive.Core">
+      <HintPath>..\packages\Rx-Core.2.2.5\lib\net45\System.Reactive.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Interfaces">
+      <HintPath>..\packages\Rx-Interfaces.2.2.5\lib\net45\System.Reactive.Interfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Linq">
+      <HintPath>..\packages\Rx-Linq.2.2.5\lib\net45\System.Reactive.Linq.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.PlatformServices">
+      <HintPath>..\packages\Rx-PlatformServices.2.2.5\lib\net45\System.Reactive.PlatformServices.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Redis.SilverlightClient\IRedisCacheClient.cs">
+      <Link>IRedisCacheClient.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\IRedisPublisher.cs">
+      <Link>IRedisPublisher.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\IRedisSubscriber.cs">
+      <Link>IRedisSubscriber.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Messages\RedisChannelMessage.cs">
+      <Link>Messages\RedisChannelMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Messages\RedisChannelPatternMessage.cs">
+      <Link>Messages\RedisChannelPatternMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Messages\RedisDeleteMessage.cs">
+      <Link>Messages\RedisDeleteMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Messages\RedisGetValueMessage.cs">
+      <Link>Messages\RedisGetValueMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Messages\RedisGetValuesMessage.cs">
+      <Link>Messages\RedisGetValuesMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Messages\RedisPatternSubscribeMessage.cs">
+      <Link>Messages\RedisPatternSubscribeMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Messages\RedisPublishMessage.cs">
+      <Link>Messages\RedisPublishMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Messages\RedisSetValueMessage.cs">
+      <Link>Messages\RedisSetValueMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Messages\RedisSetValuesMessage.cs">
+      <Link>Messages\RedisSetValuesMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Messages\RedisSubscribeMessage.cs">
+      <Link>Messages\RedisSubscribeMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\RedisCacheClient.cs">
+      <Link>RedisCacheClient.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\RedisException.cs">
+      <Link>RedisException.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\RedisPublisher.cs">
+      <Link>RedisPublisher.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\RedisSubscriber.cs">
+      <Link>RedisSubscriber.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\SocketConnectionExtensions.cs">
+      <Link>SocketConnectionExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Sockets\SocketAsyncEventArgsExtensions.cs">
+      <Link>Sockets\SocketAsyncEventArgsExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Sockets\SocketConnection.cs">
+      <Link>Sockets\SocketConnection.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Sockets\SocketConnector.cs">
+      <Link>Sockets\SocketConnector.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Sockets\SocketReceiver.cs">
+      <Link>Sockets\SocketReceiver.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Sockets\SocketTransmitter.cs">
+      <Link>Sockets\SocketTransmitter.cs</Link>
+    </Compile>
+    <Compile Include="..\Redis.SilverlightClient\Sockets\SocketTransmitterReceiver.cs">
+      <Link>Sockets\SocketTransmitterReceiver.cs</Link>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Redis.MessageParsers\Redis.MessageParsers.csproj">
+      <Project>{77e307c7-ca43-4960-a59c-0f23c1960193}</Project>
+      <Name>Redis.MessageParsers</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
