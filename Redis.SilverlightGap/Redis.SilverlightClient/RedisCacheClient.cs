@@ -70,11 +70,10 @@ namespace Redis.SilverlightClient
 
                 if (!getResult.WasSuccessful)
                 {
-                    return null;
+                    return new Tuple<bool, string>(false, null);
                 }
-
-                return getResult.Value;
-            }).Where(x => x != null).Take(1).ToTask();
+                return new Tuple<bool, string>(true, getResult.Value);
+            }).Where(x => x.Item1).Take(1).Select(x => x.Item2).ToTask();
         }
 
         public Task SetValues(IEnumerable<KeyValuePair<string, string>> keyValuePairs)
