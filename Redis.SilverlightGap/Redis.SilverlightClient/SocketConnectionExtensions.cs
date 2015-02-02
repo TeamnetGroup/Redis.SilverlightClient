@@ -1,9 +1,5 @@
 ﻿using Redis.SilverlightClient.Sockets;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reactive.Concurrency;
-using System.Text;
 
 namespace Redis.SilverlightClient
 {

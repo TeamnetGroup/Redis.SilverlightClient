@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Net.Sockets;
-using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Reactive.Threading.Tasks;
-using System.Threading.Tasks;
 
 namespace Redis.SilverlightClient.Sockets
 {
@@ -34,7 +31,7 @@ namespace Redis.SilverlightClient.Sockets
             var connectArgs = new SocketAsyncEventArgs();
             var sendArgs = new SocketAsyncEventArgs();
             var receiveArgs = new SocketAsyncEventArgs();
-
+            
             compositeDisposable.Add(socket);
             compositeDisposable.Add(connectArgs);
             compositeDisposable.Add(sendArgs);
@@ -55,7 +52,8 @@ namespace Redis.SilverlightClient.Sockets
 
                     return new SocketTransmitterReceiver(
                          message => transmitter.SendMessage(connectedSocket, sendArgs, scheduler, message),
-                         () => receiver.Receive(connectedSocket, receiveArgs, scheduler, buffer));
+                         () => receiver.Receive(connectedSocket, receiveArgs, scheduler, buffer),
+                         scheduler);
 
                 }).Concat(Observable.Never<SocketTransmitterReceiver>()).Subscribe(connectionSubject);
 

@@ -3,11 +3,9 @@ using Redis.SilverlightClient.Messages;
 using Redis.SilverlightClient.Parsers;
 using Redis.SilverlightClient.Sockets;
 using System;
-using System.Reactive.Concurrency;
+using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
-using System.Reactive.Linq;
-using System.Linq;
 
 namespace Redis.SilverlightClient
 {
@@ -29,7 +27,7 @@ namespace Redis.SilverlightClient
         {
             var publishMessage = new RedisPublishMessage(channelName, message);
 
-            return socketConnection.Connection.Select(connection =>
+            return socketConnection.Connection.Take(1).Select(connection =>
             {
                 var request = connection.SendMessage(publishMessage.ToString());
                 var response = connection.ReceiveMessage();
@@ -43,7 +41,7 @@ namespace Redis.SilverlightClient
 
                     return pongs.Value;
                 });
-            }).Merge().ToTask();
+            }).Merge(1).ToTask();
         }
 
         public void Dispose()

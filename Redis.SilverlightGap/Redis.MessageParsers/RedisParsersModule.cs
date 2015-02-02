@@ -30,6 +30,7 @@ namespace Redis.SilverlightClient.Parsers
                                             from _ in Parse.String("\r\n")
                                             from arrayElement in BulkStringParser.Repeat(arrayLength - 1)
                                             from channelSubscribed in IntegerParser
+                                            from __ in Parse.String("\r\n")
                                             select arrayElement
                                         ).Select(x => x.ToArray());
 

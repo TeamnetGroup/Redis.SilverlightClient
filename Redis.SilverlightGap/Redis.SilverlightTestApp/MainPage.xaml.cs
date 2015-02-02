@@ -1,14 +1,13 @@
-﻿using System;
+﻿using Redis.SilverlightClient;
+using Redis.SilverlightClient.Sockets;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-
-using Redis.SilverlightClient;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using Redis.SilverlightClient.Sockets;
 
 namespace Redis.SilverlightTestApp
 {
@@ -25,8 +24,13 @@ namespace Redis.SilverlightTestApp
         {
             try
             {
-                var connection = new SocketConnection("127.0.0.1", 4525, TaskPoolScheduler.Default);
-                await connection.AsPublisher().PublishMessage("test-alert", textBoxMessage.Text);
+                using (var connection = new SocketConnection("127.0.0.1", 4525, Scheduler.Default))
+                {
+                    var publisher = connection.AsPublisher();
+
+                    await publisher.PublishMessage("alert1", textBoxMessage.Text);
+                    await publisher.PublishMessage("alert2", textBoxMessage.Text);
+                }
             }
             catch (Exception ex)
             {
@@ -36,25 +40,45 @@ namespace Redis.SilverlightTestApp
 
         void MainPageLoaded(object sender, RoutedEventArgs e)
         {
+            Subscribe();
+        }
+
+        async void Subscribe()
+        {
             var connection = new SocketConnection("127.0.0.1", 4525, TaskPoolScheduler.Default);
             var currentSyncronizationContext = SynchronizationContext.Current;
+            var subscriber = connection.AsSubscriber();
 
-            connection.AsSubscriber()
-                .Subscribe("test-alert")
-                .ObserveOn(currentSyncronizationContext)
-                .Subscribe(message =>
-                 {
-                    listBoxAlerts.Items.Add(new ListBoxItem { Content = message.Content });
-                 },
-                 ex =>
-                 {
-                      MessageBox.Show(ex.ToString());
-                 });
+            try
+            {
+                var channelsSubscription = await subscriber.Subscribe("alert1", "alert2");
+                channelsSubscription
+                    .ObserveOn(currentSyncronizationContext)
+                    .Subscribe(message =>
+                    {
+                        listBoxAlerts.Items.Add(new ListBoxItem { Content = message.ChannelName + ":" + message.Content });
+                    },
+                    ex =>
+                    {
+                        MessageBox.Show(ex.ToString());
+                    });
 
-            Observable.Timer(TimeSpan.FromSeconds(30)).ObserveOn(currentSyncronizationContext).Subscribe(_ =>
-                {
-                    connection.Dispose();
-                });
+                var channelsPatternSubscription = await subscriber.PSubscribe("alert*");
+                channelsPatternSubscription
+                    .ObserveOn(currentSyncronizationContext)
+                    .Subscribe(message =>
+                    {    
+                        listBoxAlerts.Items.Add(new ListBoxItem { Content = message.Pattern + ":" + message.Content });
+                    },
+                    ex =>
+                    {
+                        MessageBox.Show(ex.ToString());
+                    });
+            }
+            catch (AggregateException ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }
         }
     }
 }
