@@ -7,7 +7,7 @@ namespace Redis.SilverlightClient.Messages
 {
     internal class RedisPublishMessage
     {
-        public RedisPublishMessage(string channelName, string message, TaskCompletionSource<int> callback)
+        public RedisPublishMessage(string channelName, string message)
         {
             if (string.IsNullOrEmpty(channelName))
                 throw new ArgumentException("channelName");
@@ -15,17 +15,12 @@ namespace Redis.SilverlightClient.Messages
             if (string.IsNullOrEmpty(message))
                 throw new ArgumentException("message");
 
-            if (callback == null)
-                throw new ArgumentNullException("callback");
-
             this.ChannelName = channelName;
             this.Message = message;
-            this.Callback = callback;
         }
 
         public string ChannelName { get; private set; }
         public string Message { get; private set; }
-        public TaskCompletionSource<int> Callback { get; private set; }
 
         public override string ToString()
         {

@@ -1,38 +1,29 @@
-﻿using PortableSprache;
-using Redis.SilverlightClient.Parsers;
-using System;
+﻿using System;
 using System.Linq;
-using System.Net;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Ink;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
-using System.Windows.Shapes;
 
 namespace Redis.SilverlightClient.Messages
 {
     public class RedisPatternSubscribeMessage
     {
-        internal static readonly Parser<RedisPatternSubscribeMessage> SubscribeMessageParser =
-            from arrayOfStrings in RedisParsersModule.ArrayOfBulkStringsParser
-                .Where(x => x.Length == 4 && x[0] == "pmessage")
-            let patternName = arrayOfStrings[1]
-            let channelName = arrayOfStrings[2]
-            let content = arrayOfStrings[3]
-            select new RedisPatternSubscribeMessage(patternName, channelName, content);
+        private readonly string[] channelPatterns;
 
-        public RedisPatternSubscribeMessage(string pattern, string channelName, string content)
+        public RedisPatternSubscribeMessage(string[] channelPatterns)
         {
-            this.Pattern = pattern;
-            this.ChannelName = channelName;
-            this.Content = content;
+            if (channelPatterns == null || channelPatterns.Length == 0)
+                throw new ArgumentException("channelPatterns");
+
+            this.channelPatterns = channelPatterns;
         }
 
-        public string Pattern { get; private set; }
-        public string ChannelName { get; private set; }
-        public string Content { get; private set; }
+        public string[] ChannelPatterns { get { return channelPatterns; } }
+
+        public override string ToString()
+        {
+            return string.Format("*{0}\r\n$10\r\nPSUBSCRIBE\r\n", channelPatterns.Length + 1)
+                + channelPatterns
+                    .Select(channelName =>
+                        string.Format("${0}\r\n{1}\r\n", channelName.Length, channelName))
+                    .Aggregate((_, __) => _ + __);
+        }
     }
 }

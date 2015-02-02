@@ -1,8 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.30110.0
-MinimumVisualStudioVersion = 10.0.40219.1
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Redis.SilverlightClient", "Redis.SilverlightClient\Redis.SilverlightClient.csproj", "{07A4B917-41D6-4E3E-AF09-5C53850CBF07}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SilverlightPolicyServer", "SilverlightPolicyServer\SilverlightPolicyServer.csproj", "{7C20BD4B-9C22-47FC-B688-963C87E05085}"

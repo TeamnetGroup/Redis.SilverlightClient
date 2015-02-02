@@ -3,186 +3,149 @@ using Redis.SilverlightClient.Messages;
 using Redis.SilverlightClient.Parsers;
 using Redis.SilverlightClient.Sockets;
 using System;
-using System.Net;
-using System.Net.Sockets;
-using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
-using System.Reactive.Subjects;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reactive;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Ink;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
-using System.Windows.Shapes;
 
 namespace Redis.SilverlightClient
 {
-    public class RedisCacheClient : IDisposable
+    internal class RedisCacheClient : IRedisCacheClient, IDisposable
     {
-        private readonly Subject<object> inboxChannel;
-        private readonly IDisposable disposable;
+        private readonly SocketConnection socketConnection;
 
-        public RedisCacheClient(string host, int port) : this(host, port, Scheduler.Default) { }
-
-        public RedisCacheClient(string host, int port, IScheduler scheduler)
+        public RedisCacheClient(SocketConnection socketConnection)
         {
-            if (string.IsNullOrWhiteSpace(host))
-                throw new ArgumentException("host");
+            if (socketConnection == null)
+                throw new ArgumentNullException("socketConnection");
 
-            if (port < 4502 || port > 4534)
-                throw new ArgumentException("Port must be in range 4502-4534 due to Silverlight network access restrictions");
-
-            if (scheduler == null)
-                throw new ArgumentNullException("scheduler");
-
-            inboxChannel = new Subject<object>();
-            
-            var compositeDisposable = new CompositeDisposable();
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            var socketAsyncEventArgs = new SocketAsyncEventArgs();
-            var redisConnector = new RedisConnector(
-                                    () => new SocketDecorator(socket),
-                                    () => new SocketAsyncEventArgsDecorator(socketAsyncEventArgs));
-
-            var cancellationDisposable = new CancellationDisposable();
-
-            var connectTask = new Task<RedisTransmitterReceiver>(() =>
-            {
-                var connectionToken = redisConnector.BuildConnectionToken(host, port, scheduler).Wait<ConnectionToken>();
-                var transmitter = new RedisTransmitter(connectionToken);
-                var receiver = new RedisReceiver(connectionToken);
-
-                return new RedisTransmitterReceiver(transmitter, receiver);
-            }, cancellationDisposable.Token);
-
-            var buffer = new byte[256];
-            var pipelineDisposable = inboxChannel.ObserveOn(scheduler).Subscribe(message =>
-            {
-                try
-                {
-                    if (connectTask.Status == TaskStatus.Created)
-                    {
-                        connectTask.Start();
-                    }
-
-                    var transmitterReceiver = connectTask.Result;
-                    transmitterReceiver.Transmitter.SendMessage(message.ToString(), scheduler).Wait();
-                    var response = transmitterReceiver.Receiver.Receive(buffer, scheduler, false).Wait<string>();
-
-                    var getValueMessage = message as RedisGetValueMessage;
-
-                    if (getValueMessage != null)
-                    {
-                        var result = RedisParsersModule.BulkStringParser.TryParse(response);
-
-                        if (!result.WasSuccessful)
-                        {
-                            var nullResponse = RedisParsersModule.NullParser.TryParse(response);
-
-                            if (nullResponse.WasSuccessful)
-                            {
-                                getValueMessage.Callback.SetResult(null);
-                            }
-                            else
-                            {
-                                getValueMessage.Callback.SetException(
-                                    new ParseException(
-                                        "Unknown GET response: " + response));
-                            }
-                        }
-                        else
-                        {
-                            getValueMessage.Callback.SetResult(result.Value);
-                        }
-
-                        return;
-                    }
-
-                    var setValueMessage = message as RedisSetValueMessage;
-
-                    if (setValueMessage != null)
-                    {
-                        var ok = RedisParsersModule.OKParser.TryParse(response);
-
-                        if (!ok.WasSuccessful)
-                        {
-                            setValueMessage.Callback.SetException(
-                                    new ParseException(
-                                        "Unknown SET response: " + response));
-                        }
-
-                        setValueMessage.Callback.SetResult("OK");
-
-                        return;
-                    }
-                }
-                catch (AggregateException exception)
-                {
-                    HandleException(exception, message);
-                }
-                catch (RedisException exception)
-                {
-                    HandleException(exception, message);
-                }
-            });
-
-            compositeDisposable.Add(Disposable.Create(() => socket.Dispose()));
-            compositeDisposable.Add(pipelineDisposable);
-
-            disposable = compositeDisposable;
-        }
-
-        private void HandleException(Exception exception, object message)
-        {
-            var getValueMessage = message as RedisGetValueMessage;
-
-            if (getValueMessage != null)
-            {
-                getValueMessage.Callback.SetException(exception);
-                return;
-            }
-
-            var setValueMessage = message as RedisSetValueMessage;
-
-            if (setValueMessage != null)
-            {
-                setValueMessage.Callback.SetException(exception);
-                return;
-            }
+            this.socketConnection = socketConnection;
         }
 
         public Task SetValue(string key, string value)
         {
-            var callback = new TaskCompletionSource<string>();
-            var setValueMessage = new RedisSetValueMessage(key, value, callback);
-            inboxChannel.OnNext(setValueMessage);
-            return callback.Task;
+            return SetValue(key, value, null);
         }
 
-        public Task SetValue(string key, string value, TimeSpan ttl)
+        public Task SetValue(string key, string value, TimeSpan? ttl)
         {
-            var callback = new TaskCompletionSource<string>();
-            var setValueMessage = new RedisSetValueMessage(key, value, ttl, callback);
-            inboxChannel.OnNext(setValueMessage);
-            return callback.Task;
+            var setValueMessage = new RedisSetValueMessage(key, value, ttl);
+
+            return socketConnection.Connection.Take(1).Select(connection =>
+            {
+                var request = connection.SendMessage(setValueMessage.ToString());
+                var response = connection.ReceiveMessage();
+
+                return request.Zip(response, (_, result) => result).Select(result =>
+                {
+                    var ok = RedisParsersModule.OKParser.TryParse(result);
+
+                    if(!ok.WasSuccessful)
+                        throw new ParseException("Unknown SET response: " + result);
+
+                    return ok.Value;
+                });
+            }).Merge().ToTask();
         }
 
         public Task<string> GetValue(string key)
         {
-            var callback = new TaskCompletionSource<string>();
-            var getValueMessage = new RedisGetValueMessage(key, callback);
-            inboxChannel.OnNext(getValueMessage);
-            return callback.Task;
+            var getValueMessage = new RedisGetValueMessage(key);
+            string remainder = string.Empty;
+
+            return socketConnection.Connection.Take(1).Select(connection =>
+            {
+                return connection.SendMessage(getValueMessage.ToString()).Select(_ => connection);;
+            }).Merge(1).Select(connection =>
+            {
+                return connection.ReceiveMessage().Repeat();
+            }).Merge(1).Select(result =>
+            {
+                remainder += result;
+                var getResult = RedisParsersModule.BulkStringParser.Or(RedisParsersModule.NullParser).TryParse(remainder);
+
+                if (!getResult.WasSuccessful)
+                {
+                    return new Tuple<bool, string>(false, null);
+                }
+                return new Tuple<bool, string>(true, getResult.Value);
+            }).Where(x => x.Item1).Take(1).Select(x => x.Item2).ToTask();
+        }
+
+        public Task SetValues(IEnumerable<KeyValuePair<string, string>> keyValuePairs)
+        {
+            var setValuesMessage = new RedisSetValuesMessage(keyValuePairs);
+            
+            return socketConnection.Connection.Take(1).Select(connection =>
+            {
+                var request = connection.SendMessage(setValuesMessage.ToString());
+                var response = connection.ReceiveMessage();
+
+                return request.Zip(response, (_, result) => result).Select(result =>
+                {
+                    var ok = RedisParsersModule.OKParser.TryParse(result);
+
+                    if (!ok.WasSuccessful)
+                        throw new ParseException("Unknown MSET response: " + result);
+
+                    return ok.Value;
+                });
+            }).Merge().ToTask();
+        }
+
+        public Task<IEnumerable<string>> GetValues(params string[] keys)
+        {
+            var getValuesMessage = new RedisGetValuesMessage(keys);
+            string remainder = string.Empty;    
+
+            return socketConnection.Connection.Take(1).Select(connection =>
+            {
+                return connection.SendMessage(getValuesMessage.ToString()).Select(_ => connection);
+            }).Merge(1).Select(connection =>
+            {
+                return connection.ReceiveMessage().Repeat();
+            }).Merge(1).Select(result =>
+            {
+                remainder += result;
+                var getResult = RedisParsersModule.ArrayOfBulkStringsParser.TryParse(remainder);
+
+                if (!getResult.WasSuccessful)
+                {
+                    return null;
+                }
+
+                return getResult.Value.AsEnumerable();
+            }).Where(x => x != null).Take(1).ToTask();
+        }
+
+        public Task<int> Del(params string[] keys)
+        {
+            var deleteMessage = new RedisDeleteMessage(keys);
+
+            return socketConnection.Connection.Take(1).Select(connection =>
+            {
+                var request = connection.SendMessage(deleteMessage.ToString());
+                var response = connection.ReceiveMessage();
+
+                return request.Zip(response, (_, result) => result).Select(result =>
+                {
+                    var pongs = RedisParsersModule.IntegerParser.TryParse(result);
+
+                    if (!pongs.WasSuccessful)
+                        throw new ParseException(string.Format("Invalid integer response for published message: {0}", result));
+
+                    return pongs.Value;
+                });
+            }).Merge(1).ToTask();
         }
 
         public void Dispose()
         {
-            inboxChannel.Dispose();
-            disposable.Dispose();
+            socketConnection.Dispose();
         }
     }
 }
