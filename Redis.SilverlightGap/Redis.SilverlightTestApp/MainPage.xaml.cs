@@ -45,7 +45,7 @@ namespace Redis.SilverlightTestApp
 
         async void Subscribe()
         {
-            var connection = new SocketConnection("127.0.0.1", 4525, TaskPoolScheduler.Default);
+            var connection = new SocketConnection("127.0.0.1", 4525, Scheduler.Default);
             var currentSyncronizationContext = SynchronizationContext.Current;
             var subscriber = connection.AsSubscriber();
 
