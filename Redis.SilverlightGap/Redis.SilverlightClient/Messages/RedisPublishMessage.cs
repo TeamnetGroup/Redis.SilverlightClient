@@ -1,5 +1,4 @@
-﻿using PortableSprache;
-using Redis.SilverlightClient.Parsers;
+﻿using Redis.SilverlightClient.Parsers;
 using System;
 using System.Threading.Tasks;
 

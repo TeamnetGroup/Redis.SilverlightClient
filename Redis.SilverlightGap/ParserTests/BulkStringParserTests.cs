@@ -1,6 +1,5 @@
-﻿using PortableSprache;
-
-using Xunit;
+﻿using Xunit;
+using Sprache;
 
 namespace ParserTests
 {

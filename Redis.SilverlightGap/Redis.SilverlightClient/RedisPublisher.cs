@@ -1,7 +1,7 @@
-﻿using PortableSprache;
-using Redis.SilverlightClient.Messages;
+﻿using Redis.SilverlightClient.Messages;
 using Redis.SilverlightClient.Parsers;
 using Redis.SilverlightClient.Sockets;
+using Sprache;
 using System;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;

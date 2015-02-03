@@ -1,6 +1,6 @@
 ﻿using System.Linq;
-using PortableSprache;
 using Redis.MessageParsers;
+using Sprache;
 
 namespace Redis.SilverlightClient.Parsers
 {

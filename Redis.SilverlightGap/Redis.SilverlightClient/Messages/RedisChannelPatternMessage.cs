@@ -1,5 +1,5 @@
-﻿using PortableSprache;
-using Redis.SilverlightClient.Parsers;
+﻿using Redis.SilverlightClient.Parsers;
+using Sprache;
 
 namespace Redis.SilverlightClient.Messages
 {
