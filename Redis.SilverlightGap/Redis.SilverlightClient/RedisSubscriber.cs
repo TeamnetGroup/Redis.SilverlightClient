@@ -1,5 +1,4 @@
-﻿using PortableSprache;
-using Redis.SilverlightClient.Messages;
+﻿using Redis.SilverlightClient.Messages;
 using Redis.SilverlightClient.Parsers;
 using Redis.SilverlightClient.Sockets;
 using System;
@@ -9,6 +8,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
+using Sprache;
 
 namespace Redis.SilverlightClient
 {
