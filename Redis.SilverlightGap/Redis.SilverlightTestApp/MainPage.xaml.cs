@@ -29,7 +29,17 @@ namespace Redis.SilverlightTestApp
                     var publisher = connection.AsPublisher();
 
                     await publisher.PublishMessage("alert1", textBoxMessage.Text);
-                    await publisher.PublishMessage("alert2", textBoxMessage.Text);
+                    //await publisher.PublishMessage("alert2", textBoxMessage.Text);
+                }
+
+                using (var connection = new SocketConnection("127.0.0.1", 4525, Scheduler.Default))
+                {
+                    var cacheClient = connection.AsCacheClient();
+
+                    //await cacheClient.SetValue("alert1", textBoxMessage.Text);
+                    var result  = await cacheClient.GetValues(new string[]{"alert1", "alert3"});
+                    await cacheClient.Del("alert1");
+                    var result2 = await cacheClient.GetValues(new string[] { "alert1", "alert3" });
                 }
             }
             catch (Exception ex)
@@ -51,24 +61,32 @@ namespace Redis.SilverlightTestApp
 
             try
             {
-                var channelsSubscription = await subscriber.Subscribe("alert1", "alert2");
+                var channelMessagesReceived = 0;
+                var channelsSubscription = await subscriber.Subscribe("alert1");
                 channelsSubscription
+                    .Buffer(TimeSpan.FromSeconds(1))
                     .ObserveOn(currentSyncronizationContext)
-                    .Subscribe(message =>
+                    .Subscribe(messages =>
                     {
-                        listBoxAlerts.Items.Add(new ListBoxItem { Content = message.ChannelName + ":" + message.Content });
+                        channelMessagesReceived += messages.Count;
+                        channelMessages.Text = channelMessagesReceived.ToString();
+                        //listBoxAlerts.Items.Add(new ListBoxItem { Content = message.ChannelName + ":" + message.Content });
                     },
                     ex =>
                     {
                         MessageBox.Show(ex.ToString());
                     });
 
+                var patternChannelMessagesReceived = 0;
                 var channelsPatternSubscription = await subscriber.PSubscribe("alert*");
                 channelsPatternSubscription
+                    .Buffer(TimeSpan.FromSeconds(1))
                     .ObserveOn(currentSyncronizationContext)
-                    .Subscribe(message =>
-                    {    
-                        listBoxAlerts.Items.Add(new ListBoxItem { Content = message.Pattern + ":" + message.Content });
+                    .Subscribe(messages =>
+                    {
+                        patternChannelMessagesReceived += messages.Count;
+                        channelPatternMessages.Text = patternChannelMessagesReceived.ToString();
+                        //listBoxAlerts.Items.Add(new ListBoxItem { Content = message.Pattern + ":" + message.Content });
                     },
                     ex =>
                     {

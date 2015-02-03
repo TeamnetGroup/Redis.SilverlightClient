@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>RedisIntegration</name>
+    </assembly>
+    <members>
+        <member name="T:RedisIntegration.Connection">
+            <summary>	Defines immutable Redis connection information.  </summary>
+            <remarks>	8/3/2011. </remarks>
+        </member>
+        <member name="M:RedisIntegration.Connection.#ctor(System.String,System.Int32)">
+            <summary>	Constructor. </summary>
+            <remarks>	8/3/2011. </remarks>
+            <param name="port">	The port. </param>
+            <param name="host">	The host. </param>
+        </member>
+        <member name="M:RedisIntegration.Connection.Equals(RedisIntegration.Connection)">
+            <summary>	Tests if this RedisConnection is considered equal to another. </summary>
+            <remarks>	8/3/2011. </remarks>
+            <param name="other">	The redis connection to compare to this object. </param>
+            <returns>	true if the objects are considered equal, false if they are not. </returns>
+        </member>
+        <member name="P:RedisIntegration.Connection.Port">
+            <summary>	Gets the port. </summary>
+            <value>	The port. </value>
+        </member>
+        <member name="P:RedisIntegration.Connection.Host">
+            <summary>	Gets the host address. </summary>
+            <value>	The host. </value>
+        </member>
+        <member name="T:RedisIntegration.HostProcessController">
+            <summary>	A class that disposes the Redis host process properly.  </summary>
+            <remarks>	8/3/2011. </remarks>
+        </member>
+        <member name="M:RedisIntegration.HostProcessController.Finalize">
+            <summary>	Finalizer responsible for safely cleaning up the database and configuration files. </summary>
+            <remarks>	8/3/2011. </remarks>
+        </member>
+        <member name="M:RedisIntegration.HostProcessController.#ctor(System.String,System.String,System.String,System.Int32,System.Diagnostics.Process)">
+            <summary>	Constructor. </summary>
+            <remarks>	8/3/2011. </remarks>
+            <param name="databaseFilePath">	Full pathname of the database file. </param>
+            <param name="configFilePath">  	Full pathname of the configuration file. </param>
+            <param name="host">			   	The host. </param>
+            <param name="port">			   	The port. </param>
+            <param name="process">		   	The process. </param>
+        </member>
+        <member name="P:RedisIntegration.HostProcessController.ConfigFilePath">
+            <summary>	Gets the full pathname of the configuration file. </summary>
+            <value>	The full pathname of the configuration file. </value>
+        </member>
+        <member name="P:RedisIntegration.HostProcessController.DatabaseFilePath">
+            <summary>	Gets the full pathname of the database file. </summary>
+            <value>	The full pathname of the database file. </value>
+        </member>
+        <member name="P:RedisIntegration.HostProcessController.Port">
+            <summary>	Gets the port. </summary>
+            <value>	The port. </value>
+        </member>
+        <member name="P:RedisIntegration.HostProcessController.Host">
+            <summary>	Gets the host address. </summary>
+            <value>	The host. </value>
+        </member>
+        <member name="T:RedisIntegration.HostManager">
+            <summary>	A helper class that can launch Redis instances under test.  </summary>
+            <remarks>	8/3/2011. </remarks>
+        </member>
+        <member name="M:RedisIntegration.HostManager.RunInstanceWithVisibleWindow(System.Int32)">
+            <summary>	Establishes a running server on the given port, with a visible Redis process window.  Issues a FLUSHALL command after starting up the first time. </summary>
+            <param name="port">   	The port (Redis default is 6379). </param>
+            <returns>	A Connection instance describing the host and port connection information. </returns>
+        </member>
+        <member name="M:RedisIntegration.HostManager.RunInstance(System.Int32)">
+            <summary>	Establishes a running server on the given port, with a hidden Redis process window.  Issues a FLUSHALL command after starting up the first time. </summary>
+            <param name="port">   	The port (Redis default is 6379). </param>
+            <returns>	A Connection instance describing the host and port connection information. </returns>
+        </member>
+        <member name="M:RedisIntegration.HostManager.RunInstanceWithVisibleWindow">
+            <summary>	Establishes a running server on default port 6379, with a visible Redis process window.  Issues a FLUSHALL command after starting up the first time. </summary>
+            <remarks>	The port defaults to 6379 (Redis default). </remarks>
+            <returns>	A Connection instance describing the host and port connection information. </returns>
+        </member>
+        <member name="M:RedisIntegration.HostManager.RunInstance">
+            <summary>	Establishes a running server on default port 6379, with a hidden Redis process window.  Issues a FLUSHALL command after starting up the first time. </summary>
+            <returns>	A Connection instance describing the host and port connection information. </returns>
+        </member>
+    </members>
+</doc>

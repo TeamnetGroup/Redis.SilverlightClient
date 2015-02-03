@@ -10,6 +10,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
@@ -20,5 +21,13 @@
             <Button x:Name="buttonSendMessage" FontSize="22" Grid.Column="1" Content="Send" />
         </Grid>
         <ListBox x:Name="listBoxAlerts" FontSize="22" Grid.Row="1" HorizontalAlignment="Stretch" />
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="channelMessages" Grid.Column="0"/>
+            <TextBlock x:Name="channelPatternMessages" Grid.Column="1"/>
+        </Grid>
     </Grid>
 </UserControl>
