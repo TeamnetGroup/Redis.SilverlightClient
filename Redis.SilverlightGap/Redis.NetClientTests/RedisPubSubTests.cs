@@ -23,9 +23,9 @@ namespace Redis.NetClientTests
         {
             var expected = "CanPublishAndReceiveOnChannel";
 
-            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Default))
+            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Immediate))
             {
-                using (var publisherConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Default))
+                using (var publisherConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Immediate))
                 {
                     var subscriber = socketConnection.AsSubscriber();
                     var publisher = publisherConnection.AsPublisher();
@@ -47,9 +47,9 @@ namespace Redis.NetClientTests
         {
             var expected = "CanPublishAndReceiveOnChannel";
 
-            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Default))
+            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Immediate))
             {
-                using (var publisherConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Default))
+                using (var publisherConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Immediate))
                 {
                     var subscriber = socketConnection.AsSubscriber();
                     var publisher = publisherConnection.AsPublisher();
@@ -75,9 +75,9 @@ namespace Redis.NetClientTests
         {
             var expected = "CanPublishAndReceiveOnChannelPattern";
 
-            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Default))
+            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Immediate))
             {
-                using (var publisherConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Default))
+                using (var publisherConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Immediate))
                 {
                     var subscriber = socketConnection.AsSubscriber();
                     var publisher = publisherConnection.AsPublisher();
@@ -99,9 +99,9 @@ namespace Redis.NetClientTests
         {
             var expected = "CanPublishAndReceiveMultipleMessagesOnChannelPattern";
 
-            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Default))
+            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Immediate))
             {
-                using (var publisherConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Default))
+                using (var publisherConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Immediate))
                 {
                     var subscriber = socketConnection.AsSubscriber();
                     var publisher = publisherConnection.AsPublisher();

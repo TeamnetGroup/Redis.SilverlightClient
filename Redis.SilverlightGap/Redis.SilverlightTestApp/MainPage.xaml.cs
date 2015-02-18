@@ -24,7 +24,7 @@ namespace Redis.SilverlightTestApp
         {
             try
             {
-                using (var connection = new SocketConnection("127.0.0.1", 4525, Scheduler.Default))
+                using (var connection = new SocketConnection("127.0.0.1", 4525, Scheduler.Immediate))
                 {
                     var publisher = connection.AsPublisher();
 
@@ -32,7 +32,7 @@ namespace Redis.SilverlightTestApp
                     //await publisher.PublishMessage("alert2", textBoxMessage.Text);
                 }
 
-                using (var connection = new SocketConnection("127.0.0.1", 4525, Scheduler.Default))
+                using (var connection = new SocketConnection("127.0.0.1", 4525, Scheduler.Immediate))
                 {
                     var cacheClient = connection.AsCacheClient();
 
@@ -55,7 +55,7 @@ namespace Redis.SilverlightTestApp
 
         async void Subscribe()
         {
-            var connection = new SocketConnection("127.0.0.1", 4525, Scheduler.Default);
+            var connection = new SocketConnection("127.0.0.1", 4525, Scheduler.Immediate);
             var currentSyncronizationContext = SynchronizationContext.Current;
             var subscriber = connection.AsSubscriber();
 

@@ -12,7 +12,7 @@ Redis.SilverlightClient
 
 ### SocketConnection as publisher
 
-    using (var connection = new SocketConnection("127.0.0.1", 4525, Scheduler.Default))
+    using (var connection = new SocketConnection("127.0.0.1", 4525, Scheduler.Immediate))
     {
       var publisher = connection.AsPublisher();
 
@@ -22,7 +22,7 @@ Redis.SilverlightClient
 
 ### SocketConnection as cache client
 
-    using (var connection = new SocketConnection("127.0.0.1", 4525, Scheduler.Default))
+    using (var connection = new SocketConnection("127.0.0.1", 4525, Scheduler.Immediate))
     {
       var cacheClient = connection.AsCacheClient();
 
@@ -42,7 +42,7 @@ Redis.SilverlightClient
 
 ### SocketConnection as subscriber
 
-    var connection = new SocketConnection("127.0.0.1", 4525, Scheduler.Default))
+    var connection = new SocketConnection("127.0.0.1", 4525, Scheduler.Immediate))
     var subscriber = connection.AsSubscriber();
 
     var channelsSubscription = await subscriber.Subscribe("alert1", "alert2");

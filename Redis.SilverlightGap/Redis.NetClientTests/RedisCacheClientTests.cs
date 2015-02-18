@@ -18,7 +18,7 @@ namespace Redis.NetClientTests
         {
             var expected = "CanSetKeyAndGetValue";
 
-            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Default))
+            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Immediate))
             {
                 var cacheClient = socketConnection.AsCacheClient();
                 await cacheClient.SetValue("test1", expected);
@@ -36,7 +36,7 @@ namespace Redis.NetClientTests
             map.Add("test2", expected);
             map.Add("test3", expected);
 
-            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Default))
+            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Immediate))
             {
                 var cacheClient = socketConnection.AsCacheClient();
                 await cacheClient.SetValues(map);
@@ -52,7 +52,7 @@ namespace Redis.NetClientTests
         {
             var expected = "CanSetKeyAndThenDeleteIt";
 
-            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Default))
+            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Immediate))
             {
                 var cacheClient = socketConnection.AsCacheClient();
                 await cacheClient.SetValue("test4", expected);
@@ -72,7 +72,7 @@ namespace Redis.NetClientTests
         {
             var expected = "CanSetKeysAndThenDeleteAll";
 
-            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Default))
+            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Immediate))
             {
                 var cacheClient = socketConnection.AsCacheClient();
                 var map = new Dictionary<string, string>();
@@ -97,7 +97,7 @@ namespace Redis.NetClientTests
                     (builder, value) => builder.Append(value),
                     builder => builder.ToString());
 
-            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Default))
+            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Immediate))
             {
                 var cacheClient = socketConnection.AsCacheClient();
                 await cacheClient.SetValue("test7", expected);
