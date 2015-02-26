@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Redis.SilverlightClient
 {
-    public interface IRedisSubscriber
+    public interface IRedisSubscriber : IDisposable
     {
         Task<IObservable<RedisChannelMessage>> Subscribe(params string[] channelNames);
         Task<IObservable<RedisChannelPatternMessage>> PSubscribe(params string[] channelPatterns);

@@ -50,7 +50,7 @@ namespace Redis.SilverlightClient.Sockets
                 observer.OnCompleted();
             }
             else
-            {
+            {      
                 observer.OnError(new RedisException(socketEvent.SocketError));
             }
         }

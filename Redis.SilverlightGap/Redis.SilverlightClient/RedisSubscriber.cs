@@ -12,13 +12,14 @@ using Sprache;
 
 namespace Redis.SilverlightClient
 {
-    public class RedisSubscriber : IRedisSubscriber, IDisposable
+    internal class RedisSubscriber : IRedisSubscriber
     {
         private readonly SocketConnection socketConnection;
-        private readonly byte[] buffer;
         private readonly Subject<RedisChannelMessage> upstreamChannelMessages;
         private readonly Subject<RedisChannelPatternMessage> upstreamChannelPatternMessages;
         private readonly CompositeDisposable disposables;
+
+        private string remainder;
 
         public RedisSubscriber(SocketConnection socketConnection)
         {
@@ -26,83 +27,95 @@ namespace Redis.SilverlightClient
                 throw new ArgumentNullException("socketConnection");
 
             this.socketConnection = socketConnection;
-            this.buffer = new byte[4096];
             this.upstreamChannelMessages = new Subject<RedisChannelMessage>();
             this.upstreamChannelPatternMessages = new Subject<RedisChannelPatternMessage>();
+            this.disposables = new CompositeDisposable();
+            this.remainder = string.Empty;
 
-            var remainder = string.Empty;
+            Func<bool> tryParseRemainder = () =>
+            {
+                var parseChannelPatternMessage = RedisChannelPatternMessage.RedisChannelPatternMessageParser.TryParse(remainder);
+                if (parseChannelPatternMessage.WasSuccessful)
+                {
+                    var position = parseChannelPatternMessage.Remainder.Position;
+                    remainder = parseChannelPatternMessage.Remainder.Source.Substring(position);
+                    upstreamChannelPatternMessages.OnNext(parseChannelPatternMessage.Value);
+                    return true;
+                }
 
-            disposables = new CompositeDisposable();
-            disposables.Add(socketConnection);
+                var parseSubscriptionMessage = RedisParsersModule.SubscriptionMessageParser.TryParse(remainder);
+                if (parseSubscriptionMessage.WasSuccessful)
+                {
+                    var position = parseSubscriptionMessage.Remainder.Position;
+                    remainder = parseSubscriptionMessage.Remainder.Source.Substring(position);
+                    return true;
+                }
+
+                var parseChannelMessage = RedisChannelMessage.RedisChannelMessageParser.TryParse(remainder);
+                if (parseChannelMessage.WasSuccessful)
+                {
+                    var position = parseChannelMessage.Remainder.Position;
+                    remainder = parseChannelMessage.Remainder.Source.Substring(position);
+                    upstreamChannelMessages.OnNext(parseChannelMessage.Value);
+                    return true;
+                }
+
+                return false;
+            };
+
             disposables.Add(upstreamChannelMessages);
             disposables.Add(upstreamChannelPatternMessages);
-            disposables.Add(socketConnection.Scheduler.Schedule(self =>
-            {
+            disposables.Add(
                 socketConnection
-                    .Connection
-                    .Select(connection => connection.ReceiveMessage())
+                    .GetConnection()
+                    .Select(connection =>
+                        connection.ReceiveMessage())
                     .Merge(1)
-                    .Subscribe(message =>
-                     {
-                         remainder += message;
-                         bool retry = true;
+                    .DoWhile(() => !socketConnection.IsDisposed)
+                .SubscribeOn(socketConnection.Scheduler)
+                .Subscribe(message =>
+                {
+                    if (message.StartsWith("-", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        var error = new ParseException(remainder);
+                        upstreamChannelMessages.OnError(error);
+                        upstreamChannelPatternMessages.OnError(error);
+                    }
 
-                         while (retry)
-                         {
-                             retry = false;
-
-                             var parseSubscriptionMessage = RedisParsersModule.SubscriptionMessageParser.TryParse(remainder);
-                             if (parseSubscriptionMessage.WasSuccessful)
-                             {
-                                 var position = parseSubscriptionMessage.Remainder.Position;
-                                 remainder = parseSubscriptionMessage.Remainder.Source.Substring(position);
-                                 retry = remainder.Length > 0;
-                             }
-
-                             var parseChannelMessage = RedisChannelMessage.RedisChannelMessageParser.TryParse(remainder);
-                             if (parseChannelMessage.WasSuccessful)
-                             {
-                                 var position = parseChannelMessage.Remainder.Position;
-                                 remainder = parseChannelMessage.Remainder.Source.Substring(position);
-                                 upstreamChannelMessages.OnNext(parseChannelMessage.Value);
-                                 retry = remainder.Length > 0;
-                             }
-
-                             var parseChannelPatternMessage = RedisChannelPatternMessage.RedisChannelPatternMessageParser.TryParse(remainder);
-                             if(parseChannelPatternMessage.WasSuccessful)
-                             {
-                                 var position = parseChannelPatternMessage.Remainder.Position;
-                                 remainder = parseChannelPatternMessage.Remainder.Source.Substring(position);
-                                 upstreamChannelPatternMessages.OnNext(parseChannelPatternMessage.Value);
-                                 retry = remainder.Length > 0;
-                             }
-                         }
-
-                         self();
-                     }, ex =>
-                     {
-                         upstreamChannelMessages.OnError(ex);
-                         upstreamChannelPatternMessages.OnError(ex);
-                     },
-                     () =>
-                     {
-                         upstreamChannelMessages.OnCompleted();
-                         upstreamChannelPatternMessages.OnCompleted();
-                     });
-            }));
+                    remainder += message;
+                    bool previousMessageWasParsed = false;
+                    do
+                    {
+                        previousMessageWasParsed = tryParseRemainder();
+                    }
+                    while (previousMessageWasParsed);
+                 }, 
+                 ex => 
+                 {
+                     upstreamChannelMessages.OnError(ex);
+                     upstreamChannelPatternMessages.OnError(ex);
+                 },
+                 () =>
+                 {
+                     upstreamChannelMessages.OnCompleted();
+                     upstreamChannelPatternMessages.OnCompleted();
+                 }));
         }
 
         public Task<IObservable<RedisChannelMessage>> Subscribe(params string[] channelNames)
         {
             var subscribeMessage = new RedisSubscribeMessage(channelNames);
 
-            return socketConnection.Connection.Take(1).Select(connection =>
-            {
-                return connection.SendMessage(subscribeMessage.ToString());
-            }).Merge(1).ToTask().ContinueWith(task =>
+            return socketConnection.GetConnection().Select(connection => 
+                connection.SendMessage(subscribeMessage.ToString()))
+            .Merge(1)
+            .ToTask().ContinueWith(task =>
             {
                 if (task.Exception != null)
-                    throw task.Exception;
+                {
+                    task.Exception.Handle(_ => true);
+                    throw task.Exception.InnerException;
+                }
 
                 return upstreamChannelMessages.AsObservable();
             });
@@ -112,13 +125,16 @@ namespace Redis.SilverlightClient
         {
             var subscribeMessage = new RedisPatternSubscribeMessage(channelPatterns);
 
-            return socketConnection.Connection.Take(1).Select(connection =>
+            return socketConnection.GetConnection().Select(connection =>
+                connection.SendMessage(subscribeMessage.ToString()))
+            .Merge(1)
+            .ToTask().ContinueWith(task =>
             {
-                return connection.SendMessage(subscribeMessage.ToString());
-            }).Merge(1).ToTask().ContinueWith(task =>
-            {
-                if(task.Exception != null)
-                    throw task.Exception;
+                if (task.Exception != null)
+                {
+                    task.Exception.Handle(_ => true);
+                    throw task.Exception.InnerException;
+                }
 
                 return upstreamChannelPatternMessages.AsObservable();
             });

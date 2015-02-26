@@ -9,10 +9,9 @@ using System.Threading.Tasks;
 
 namespace Redis.SilverlightClient
 {
-    internal class RedisPublisher : IRedisPublisher, IDisposable
+    internal class RedisPublisher : IRedisPublisher
     {
         private readonly SocketConnection socketConnection;
-        private readonly byte[] buffer;
 
         public RedisPublisher(SocketConnection socketConnection)
         {
@@ -20,14 +19,13 @@ namespace Redis.SilverlightClient
                 throw new ArgumentNullException("socketConnection");
 
             this.socketConnection = socketConnection;
-            this.buffer = new byte[4096];
         }
          
         public Task<int> PublishMessage(string channelName, string message)
         {
             var publishMessage = new RedisPublishMessage(channelName, message);
 
-            return socketConnection.Connection.Take(1).Select(connection =>
+            return socketConnection.GetConnection().Take(1).Select(connection =>
             {
                 var request = connection.SendMessage(publishMessage.ToString());
                 var response = connection.ReceiveMessage();
@@ -42,11 +40,6 @@ namespace Redis.SilverlightClient
                     return pongs.Value;
                 });
             }).Merge(1).ToTask();
-        }
-
-        public void Dispose()
-        {
-            socketConnection.Dispose();
         }
     }
 }

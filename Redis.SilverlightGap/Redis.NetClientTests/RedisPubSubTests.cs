@@ -12,6 +12,7 @@ using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using System.Reactive.Subjects;
 using System.Reactive;
+using Redis.SilverlightClient.Messages;
 
 namespace Redis.NetClientTests
 {
@@ -53,19 +54,27 @@ namespace Redis.NetClientTests
                 {
                     var subscriber = socketConnection.AsSubscriber();
                     var publisher = publisherConnection.AsPublisher();
+                    var matchedReplies = 0;
+                    var tcs = new TaskCompletionSource<bool>();
+                    var expectedMessagesCount = 512;
 
                     var messagesChannel = await subscriber.Subscribe("channel1");
-                    var replaySubject = new ReplaySubject<string>();
-                    messagesChannel.Select(x => x.Content).Subscribe(replaySubject);
-
-                    foreach (var once in Enumerable.Repeat(Unit.Default, 512))
+                    messagesChannel.Subscribe(message =>
                     {
-                        await publisher.PublishMessage("channel1", expected);
+                        if (string.Compare(message.Content, expected, StringComparison.InvariantCultureIgnoreCase) == 0)
+                            matchedReplies += 1;
+
+                        if (matchedReplies == expectedMessagesCount)
+                            tcs.SetResult(true);
+                    });
+
+                    foreach (var once in Enumerable.Repeat(Unit.Default, expectedMessagesCount))
+                    {
+                        var result = await publisher.PublishMessage("channel1", expected);
                     }
 
-                    var result = replaySubject.Take(512).ToEnumerable();
-
-                    Assert.IsTrue(result.All(x => x == expected));
+                    await Task.WhenAny(Task.Delay(1000), tcs.Task);
+                    Assert.AreEqual(expectedMessagesCount, matchedReplies);
                 }
             }
         }
@@ -105,20 +114,63 @@ namespace Redis.NetClientTests
                 {
                     var subscriber = socketConnection.AsSubscriber();
                     var publisher = publisherConnection.AsPublisher();
+                    var matchedReplies = 0;
+                    var tcs = new TaskCompletionSource<bool>();
+                    var expectedMessagesCount = 512;
 
                     var channelPatternMessages = await subscriber.PSubscribe("channel*");
-                    var replaySubject = new ReplaySubject<string>();
-                    channelPatternMessages.Select(x => x.Content).Subscribe(replaySubject);
+                    channelPatternMessages.Subscribe(message =>
+                    {
+                        if (string.Compare(message.Content, expected, StringComparison.InvariantCultureIgnoreCase) == 0)
+                            matchedReplies += 1;
 
-                    foreach (var once in Enumerable.Repeat(Unit.Default, 512))
+                        if (matchedReplies == expectedMessagesCount)
+                            tcs.SetResult(true);
+                    });
+
+                    foreach (var once in Enumerable.Repeat(Unit.Default, expectedMessagesCount))
                     {
                         await publisher.PublishMessage("channel1", expected);
                     }
 
-                    var result = replaySubject.Take(512).ToEnumerable();
-
-                    Assert.IsTrue(result.All(x => x == expected));
+                    await Task.WhenAny(Task.Delay(1000), tcs.Task);
+                    Assert.AreEqual(expectedMessagesCount, matchedReplies);
                 }
+            }
+        }
+
+        [Test]
+        public async Task ChannelsObservablesDontThrowExceptionWhenSocketConnectionIsDisposed()
+        {
+            var subscriptionCompleted = new TaskCompletionSource<bool>();
+
+            using (var socketConnection = new SocketConnection(TestsSetup.Host, TestsSetup.Port, Scheduler.Immediate))
+            {
+                var subscriber = socketConnection.AsSubscriber();
+
+                var channelPatternMessages = await subscriber.PSubscribe("channel*");
+
+                channelPatternMessages.Subscribe(
+                    _ => { }, 
+                    ex => {
+                        subscriptionCompleted.SetException(ex);
+                    },
+                    () => { subscriptionCompleted.SetResult(true); });
+            }
+
+            try
+            {
+                var completed = await subscriptionCompleted.Task;
+                Assert.IsTrue(completed);
+            }
+            catch (AggregateException ex)
+            {
+                if (ex.InnerException is RedisException)
+                {
+                    throw new Exception(((RedisException)ex.InnerException).SocketError.ToString());
+                }
+
+                throw ex.InnerException;
             }
         }
     }

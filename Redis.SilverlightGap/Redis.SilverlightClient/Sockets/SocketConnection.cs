@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Sockets;
+using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
@@ -9,8 +10,8 @@ namespace Redis.SilverlightClient.Sockets
 {
     public class SocketConnection : IDisposable
     {
-        private readonly BehaviorSubject<SocketTransmitterReceiver> connectionSubject;
-        private readonly IDisposable disposable;
+        private readonly AsyncSubject<SocketTransmitterReceiver> connectionSubject;
+        private readonly CompositeDisposable disposables;
         private readonly IScheduler scheduler;
 
         public SocketConnection(string host, int port, IScheduler scheduler)
@@ -25,23 +26,23 @@ namespace Redis.SilverlightClient.Sockets
                 throw new ArgumentNullException("scheduler");
 
             this.scheduler = scheduler;
-            var compositeDisposable = new CompositeDisposable();
+            this.disposables = new CompositeDisposable();
 
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             var connectArgs = new SocketAsyncEventArgs();
             var sendArgs = new SocketAsyncEventArgs();
             var receiveArgs = new SocketAsyncEventArgs();
-            
-            compositeDisposable.Add(socket);
-            compositeDisposable.Add(connectArgs);
-            compositeDisposable.Add(sendArgs);
-            compositeDisposable.Add(receiveArgs);
+
+            disposables.Add(socket);
+            disposables.Add(connectArgs);
+            disposables.Add(sendArgs);
+            disposables.Add(receiveArgs);
 
             var socketConnector = new SocketConnector(
                                     () => socket,
                                     () => connectArgs);
 
-            connectionSubject = new BehaviorSubject<SocketTransmitterReceiver>(null);
+            connectionSubject = new AsyncSubject<SocketTransmitterReceiver>();
             var connectorDisposable = socketConnector
                 .Connect(host, port, scheduler)
                 .Select(connectedSocket =>
@@ -51,21 +52,58 @@ namespace Redis.SilverlightClient.Sockets
                     var buffer = new byte[8192];
 
                     return new SocketTransmitterReceiver(
-                         message => transmitter.SendMessage(connectedSocket, sendArgs, scheduler, message),
-                         () => receiver.Receive(connectedSocket, receiveArgs, scheduler, buffer),
+                        message => 
+                        {
+                            if (disposables.IsDisposed)
+                                return Observable.Empty<Unit>();
+                            else
+                                return Observable.Create<Unit>(observer =>
+                                    transmitter
+                                        .SendMessage(connectedSocket, sendArgs, scheduler, message)
+                                        .Subscribe(
+                                            observer.OnNext,
+                                            ex =>
+                                            {
+                                                if (disposables.IsDisposed)
+                                                    observer.OnCompleted();
+                                                else
+                                                    observer.OnError(ex);
+                                            },
+                                            observer.OnCompleted));
+                         },
+                         () => 
+                         {
+                             if(disposables.IsDisposed)
+                                 return Observable.Empty<string>();
+                             else
+                                 return Observable.Create<string>(observer =>
+                                     receiver
+                                         .Receive(connectedSocket, receiveArgs, scheduler, buffer)
+                                         .Subscribe(
+                                             observer.OnNext,
+                                             ex =>
+                                             {
+                                                 if(disposables.IsDisposed)
+                                                     observer.OnCompleted();
+                                                 else
+                                                     observer.OnError(ex);
+                                             },
+                                             observer.OnCompleted));
+                         },
                          scheduler);
 
-                }).Concat(Observable.Never<SocketTransmitterReceiver>()).Subscribe(connectionSubject);
+                }).Subscribe(connectionSubject);
 
-            compositeDisposable.Add(connectionSubject);
-            compositeDisposable.Add(connectorDisposable);
-
-            disposable = compositeDisposable;
+            disposables.Add(connectionSubject);
+            disposables.Add(connectorDisposable);
         }
 
-        public IObservable<SocketTransmitterReceiver> Connection 
+        public IObservable<SocketTransmitterReceiver> GetConnection()
         {
-            get { return connectionSubject.Where(x => x != null).ObserveOn(scheduler); }
+            if (disposables.IsDisposed)
+                return Observable.Empty<SocketTransmitterReceiver>();
+            else
+                return connectionSubject; 
         }
 
         public IScheduler Scheduler
@@ -73,9 +111,17 @@ namespace Redis.SilverlightClient.Sockets
             get { return scheduler; }
         }
 
+        public bool IsDisposed
+        {
+            get
+            {
+                return disposables.IsDisposed;
+            }
+        }
+
         public void Dispose()
         {
-            disposable.Dispose();
+            disposables.Dispose();
         }
     }
 }
