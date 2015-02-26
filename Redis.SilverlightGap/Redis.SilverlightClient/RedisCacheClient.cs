@@ -1,20 +1,17 @@
 ﻿using Redis.SilverlightClient.Messages;
 using Redis.SilverlightClient.Parsers;
 using Redis.SilverlightClient.Sockets;
+using Sprache;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Reactive;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
-using Sprache;
 
 namespace Redis.SilverlightClient
 {
-    internal class RedisCacheClient : IRedisCacheClient, IDisposable
+    internal class RedisCacheClient : IRedisCacheClient
     {
         private readonly SocketConnection socketConnection;
 
@@ -35,7 +32,7 @@ namespace Redis.SilverlightClient
         {
             var setValueMessage = new RedisSetValueMessage(key, value, ttl);
 
-            return socketConnection.Connection.Take(1).Select(connection =>
+            return socketConnection.GetConnection().Select(connection =>
             {
                 var request = connection.SendMessage(setValueMessage.ToString());
                 var response = connection.ReceiveMessage();
@@ -49,7 +46,7 @@ namespace Redis.SilverlightClient
 
                     return ok.Value;
                 });
-            }).Merge().ToTask();
+            }).Merge(1).ToTask();
         }
 
         public Task<string> GetValue(string key)
@@ -57,30 +54,37 @@ namespace Redis.SilverlightClient
             var getValueMessage = new RedisGetValueMessage(key);
             string remainder = string.Empty;
 
-            return socketConnection.Connection.Take(1).Select(connection =>
-            {
-                return connection.SendMessage(getValueMessage.ToString()).Select(_ => connection);;
-            }).Merge(1).Select(connection =>
-            {
-                return connection.ReceiveMessage().Repeat();
-            }).Merge(1).Select(result =>
-            {
-                remainder += result;
-                var getResult = RedisParsersModule.BulkStringParser.Or(RedisParsersModule.NullParser).TryParse(remainder);
+            return 
+                socketConnection
+                    .GetConnection()
+                    .Select(connection =>
+                        connection.SendMessage(getValueMessage.ToString()))
+                    .Merge(1)
+                    .Select(_ =>
+                        socketConnection
+                        .GetConnection()
+                        .Select(connection => 
+                            connection.ReceiveMessage())
+                        .Merge(1)
+                        .DoWhile(() => !socketConnection.IsDisposed))
+                    .Merge(1).Select(result =>
+                    {
+                        remainder += result;
+                        var getResult = RedisParsersModule.BulkStringParser.Or(RedisParsersModule.NullParser).TryParse(remainder);
 
-                if (!getResult.WasSuccessful)
-                {
-                    return new Tuple<bool, string>(false, null);
-                }
-                return new Tuple<bool, string>(true, getResult.Value);
-            }).Where(x => x.Item1).Take(1).Select(x => x.Item2).ToTask();
+                        if (!getResult.WasSuccessful)
+                        {
+                            return new Tuple<bool, string>(false, null);
+                        }
+                        return new Tuple<bool, string>(true, getResult.Value);
+                    }).Where(x => x.Item1).Take(1).Select(x => x.Item2).ToTask();
         }
 
         public Task SetValues(IEnumerable<KeyValuePair<string, string>> keyValuePairs)
         {
             var setValuesMessage = new RedisSetValuesMessage(keyValuePairs);
             
-            return socketConnection.Connection.Take(1).Select(connection =>
+            return socketConnection.GetConnection().Select(connection =>
             {
                 var request = connection.SendMessage(setValuesMessage.ToString());
                 var response = connection.ReceiveMessage();
@@ -94,7 +98,7 @@ namespace Redis.SilverlightClient
 
                     return ok.Value;
                 });
-            }).Merge().ToTask();
+            }).Merge(1).ToTask();
         }
 
         public Task<IEnumerable<string>> GetValues(params string[] keys)
@@ -102,31 +106,38 @@ namespace Redis.SilverlightClient
             var getValuesMessage = new RedisGetValuesMessage(keys);
             string remainder = string.Empty;    
 
-            return socketConnection.Connection.Take(1).Select(connection =>
-            {
-                return connection.SendMessage(getValuesMessage.ToString()).Select(_ => connection);
-            }).Merge(1).Select(connection =>
-            {
-                return connection.ReceiveMessage().Repeat();
-            }).Merge(1).Select(result =>
-            {
-                remainder += result;
-                var getResult = RedisParsersModule.ArrayOfBulkStringsParser.TryParse(remainder);
+            return 
+                socketConnection
+                    .GetConnection()
+                    .Select(connection =>
+                        connection.SendMessage(getValuesMessage.ToString()))
+                    .Merge(1)
+                    .Select(_ =>
+                        socketConnection
+                            .GetConnection()
+                            .Select(connection => 
+                                connection.ReceiveMessage())
+                            .Merge(1)
+                            .DoWhile(() => !socketConnection.IsDisposed))
+                    .Merge(1).Select(result =>
+                    {
+                        remainder += result;
+                        var getResult = RedisParsersModule.ArrayOfBulkStringsParser.TryParse(remainder);
 
-                if (!getResult.WasSuccessful)
-                {
-                    return null;
-                }
+                        if (!getResult.WasSuccessful)
+                        {
+                            return new Tuple<bool, IEnumerable<string>>(false, null);
+                        }
 
-                return getResult.Value.AsEnumerable();
-            }).Where(x => x != null).Take(1).ToTask();
+                        return new Tuple<bool,IEnumerable<string>>(true, getResult.Value.AsEnumerable());
+                    }).Where(x => x.Item1).Take(1).Select(x => x.Item2).ToTask();
         }
 
         public Task<int> Del(params string[] keys)
         {
             var deleteMessage = new RedisDeleteMessage(keys);
 
-            return socketConnection.Connection.Take(1).Select(connection =>
+            return socketConnection.GetConnection().Select(connection =>
             {
                 var request = connection.SendMessage(deleteMessage.ToString());
                 var response = connection.ReceiveMessage();
