@@ -46,8 +46,15 @@ namespace Redis.SilverlightClient.Sockets
         {
             if (socketEvent.SocketError == SocketError.Success)
             {
-                observer.OnNext(Encoding.UTF8.GetString(socketEvent.Buffer, 0, socketEvent.BytesTransferred));
-                observer.OnCompleted();
+                if (socketEvent.BytesTransferred == 0)
+                {
+                    observer.OnError(new InvalidOperationException("Received no bytes from Redis"));
+                }
+                else
+                {
+                    observer.OnNext(Encoding.UTF8.GetString(socketEvent.Buffer, 0, socketEvent.BytesTransferred));
+                    observer.OnCompleted();
+                }
             }
             else
             {      
